@@ -55,6 +55,17 @@ def load_and_preprocess():
     df = pd.read_csv("sherbrooke_fixed_sensor_readings.csv", on_bad_lines='skip')
     data2 = pd.read_csv("sherbrooke_sensor_readings_with_anomalies.csv", on_bad_lines='skip')
 
+    print("✅ DF shape:", df.shape)
+    print("✅ Anomalies shape:", data2.shape)
+
+
+    #trying to fix**********************************************************************************************************8
+
+    st.sidebar.write("📁 Normal File Exists:", os.path.exists("sherbrooke_fixed_sensor_readings.csv"))
+    st.sidebar.write("📁 Anomaly File Exists:", os.path.exists("sherbrooke_sensor_readings_with_anomalies.csv"))
+
+
+
     # Convert Date + Time to Datetime
     if 'Date' in df.columns and 'Time' in df.columns:
         df['Datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'], errors='coerce')
