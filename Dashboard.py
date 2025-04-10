@@ -89,7 +89,7 @@ df, data2 = load_and_preprocess()
 st.sidebar.markdown(f" **Current Time:** {datetime.now().strftime('%I:%M:%S %p')}")
 
 # 📦 Dataset selector
-dataset_choice = st.sidebar.radio("🗂 Select Dataset:", ["Normal Readings", "Anomalies"])
+dataset_choice = st.sidebar.radio("📁 Select Dataset:", ["Normal Readings", "Anomalies"])
 data = df if dataset_choice == "Normal Readings" else data2
 
 
