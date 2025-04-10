@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime
-import gdown
+import requests  # used instead of gdown
 
 # Set Streamlit page configuration
 st.set_page_config(
@@ -18,6 +18,28 @@ st.markdown("""
     </h1>
 """, unsafe_allow_html=True)
 
+# ✅ Function to download large Google Drive files
+def download_large_file_from_google_drive(file_id, destination):
+    URL = "https://docs.google.com/uc?export=download"
+    with requests.Session() as session:
+        response = session.get(URL, params={"id": file_id}, stream=True)
+        token = get_confirm_token(response)
+        if token:
+            response = session.get(URL, params={"id": file_id, "confirm": token}, stream=True)
+        save_response_content(response, destination)
+
+def get_confirm_token(response):
+    for key, value in response.cookies.items():
+        if key.startswith("download_warning"):
+            return value
+    return None
+
+def save_response_content(response, destination, chunk_size=32768):
+    with open(destination, "wb") as f:
+        for chunk in response.iter_content(chunk_size):
+            if chunk:
+                f.write(chunk)
+
 # ✅ Cached loader + preprocessor
 @st.cache_data
 def load_and_preprocess():
@@ -25,19 +47,15 @@ def load_and_preprocess():
     file_id_1 = "1dL3siMY6KaX1z0f6C5GVgTlJ06b7_Wru"  # Normal readings
     file_id_2 = "1CHO_ToDIw7EET0TfAb1xOV4VynIYPrh8"  # Anomalies
 
-    # Construct download URLs
-    url1 = f"https://drive.google.com/uc?id={file_id_1}"
-    url2 = f"https://drive.google.com/uc?id={file_id_2}"
-
-    # Download and save the CSV files
-    gdown.download(url1, "sherbrooke_fixed_sensor_readings.csv", quiet=True)
-    gdown.download(url2, "sherbrooke_sensor_readings_with_anomalies.csv", quiet=True)
+    # Download the files
+    download_large_file_from_google_drive(file_id_1, "sherbrooke_fixed_sensor_readings.csv")
+    download_large_file_from_google_drive(file_id_2, "sherbrooke_sensor_readings_with_anomalies.csv")
 
     # Read the datasets
     df = pd.read_csv("sherbrooke_fixed_sensor_readings.csv", on_bad_lines='skip')
     data2 = pd.read_csv("sherbrooke_sensor_readings_with_anomalies.csv", on_bad_lines='skip')
 
-    # Check and create datetime if columns are present
+    # Convert Date + Time to Datetime
     if 'Date' in df.columns and 'Time' in df.columns:
         df['Datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'], errors='coerce')
         df.drop(columns=['Date', 'Time'], inplace=True)
@@ -45,33 +63,31 @@ def load_and_preprocess():
         data2['Datetime'] = pd.to_datetime(data2['Date'] + ' ' + data2['Time'], errors='coerce')
         data2.drop(columns=['Date', 'Time'], inplace=True)
 
-    # Only set index if 'Datetime' exists
     if 'Datetime' in df.columns:
         df.set_index('Datetime', inplace=True)
     if 'Datetime' in data2.columns:
         data2.set_index('Datetime', inplace=True)
 
-    # Encode Gas_Level if present
     if 'Gas_Level' in df.columns:
         df['Gas_Level'] = df['Gas_Level'].astype('category').cat.codes
     if 'Gas_Level' in data2.columns:
         data2['Gas_Level'] = data2['Gas_Level'].astype('category').cat.codes
 
-    # Clean missing data
     df.dropna(inplace=True)
     data2.dropna(inplace=True)
 
     return df, data2
 
-# ✅ Call once to load the data
+# ✅ Load the data once
 df, data2 = load_and_preprocess()
 
-# Sidebar clock and dataset selector
+# 🕒 Sidebar clock
 st.sidebar.markdown(f" **Current Time:** {datetime.now().strftime('%I:%M:%S %p')}")
-dataset_choice = st.sidebar.radio("🗂 Select Dataset:", ["Normal Readings", "Anomalies"])
 
-# Select the appropriate dataset
+# 📦 Dataset selector
+dataset_choice = st.sidebar.radio("🗂 Select Dataset:", ["Normal Readings", "Anomalies"])
 data = df if dataset_choice == "Normal Readings" else data2
+
 
 # Sidebar info block
 
