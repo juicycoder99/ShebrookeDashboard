@@ -69,6 +69,22 @@ def load_and_preprocess():
     st.sidebar.write("📁 Anomaly File Exists:", os.path.exists("sherbrooke_sensor_readings_with_anomalies.csv"))
 
 
+    with open("sherbrooke_fixed_sensor_readings.csv", "r") as f:
+    sample_lines = [next(f) for _ in range(10)]
+    st.sidebar.write("📄 First lines from Normal CSV:")
+    for line in sample_lines:
+        st.sidebar.text(line)
+
+
+    with open("sherbrooke_sensor_readings_with_anomalies.csv", "r") as f:
+    sample_lines = [next(f) for _ in range(10)]
+    st.sidebar.write("📄 First lines from Anomaly CSV:")
+    for line in sample_lines:
+        st.sidebar.text(line)
+
+
+
+
 
     # Convert Date + Time to Datetime
     if 'Date' in df.columns and 'Time' in df.columns:
