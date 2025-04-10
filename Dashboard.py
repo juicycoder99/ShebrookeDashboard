@@ -69,18 +69,30 @@ def load_and_preprocess():
     st.sidebar.write("📁 Anomaly File Exists:", os.path.exists("sherbrooke_sensor_readings_with_anomalies.csv"))
 
 
-    with open("sherbrooke_fixed_sensor_readings.csv", "r") as f:
-        sample_lines = [next(f) for _ in range(10)]
-        st.sidebar.write("📄 First lines from Normal CSV:")
-        for line in sample_lines:
-            st.sidebar.text(line)
+    # ✅ Preview first lines from the normal file
+    try:
+        with open("sherbrooke_fixed_sensor_readings.csv", "r") as f:
+            st.sidebar.write("📄 First lines from Normal CSV:")
+            for i, line in enumerate(f):
+                st.sidebar.text(line)
+                if i == 9:
+                    break
+    except Exception as e:
+        st.sidebar.error(f"❌ Failed to read Normal file: {e}")
 
 
-    with open("sherbrooke_sensor_readings_with_anomalies.csv", "r") as f:
-        sample_lines = [next(f) for _ in range(10)]
-        st.sidebar.write("📄 First lines from Anomaly CSV:")
-        for line in sample_lines:
-            st.sidebar.text(line)
+
+    # ✅ Preview first lines from the anomaly file
+    try:
+        with open("sherbrooke_sensor_readings_with_anomalies.csv", "r") as f:
+            st.sidebar.write("📄 First lines from Anomaly CSV:")
+            for i, line in enumerate(f):
+                st.sidebar.text(line)
+                if i == 9:
+                    break
+    except Exception as e:
+        st.sidebar.error(f"❌ Failed to read Anomaly file: {e}")
+
 
 
 
