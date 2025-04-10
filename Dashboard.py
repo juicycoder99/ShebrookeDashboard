@@ -1,14 +1,15 @@
 import streamlit as st
 import pandas as pd
-import os
 import matplotlib.pyplot as plt
 import seaborn as sns
-import datetime
-from datetime import datetime, timedelta
+from datetime import datetime
 import gdown
 
-# Set Streamlit page configuration 
-st.set_page_config(page_title="Temperature, Humidity, Moisture & Gas Dashboard", layout="wide")
+# Set Streamlit page configuration
+st.set_page_config(
+    page_title="Temperature, Humidity, Moisture & Gas Dashboard", 
+    layout="wide"
+)
 
 # Add a header with title
 st.markdown("""
@@ -21,35 +22,30 @@ st.markdown("""
 @st.cache_data
 def load_and_preprocess():
     # Google Drive file IDs
-    fixed_id = "1dL3siMY6KaX1z0f6C5GVgTlJ06b7_Wru"
-    anomalies_id = "1CHO_ToDIw7EET0TfAb1xOV4VynIYPrh8"
+    file_id_1 = "1dL3siMY6KaX1z0f6C5GVgTlJ06b7_Wru"  # Normal readings
+    file_id_2 = "1CHO_ToDIw7EET0TfAb1xOV4VynIYPrh8"  # Anomalies
 
-    # Construct Google Drive URLs
-    url1 = f"https://drive.google.com/uc?id={fixed_id}"
-    url2 = f"https://drive.google.com/uc?id={anomalies_id}"
+    # Construct download URLs
+    url1 = f"https://drive.google.com/uc?id={file_id_1}"
+    url2 = f"https://drive.google.com/uc?id={file_id_2}"
 
-    # Download CSVs
-    gdown.download(url1, 'sherbrooke_fixed_sensor_readings.csv', quiet=False, fuzzy=True)
-    gdown.download(url2, 'sherbrooke_sensor_readings_with_anomalies.csv', quiet=False, fuzzy=True)
+    # Download and save the CSV files
+    gdown.download(url1, "sherbrooke_fixed_sensor_readings.csv", quiet=True)
+    gdown.download(url2, "sherbrooke_sensor_readings_with_anomalies.csv", quiet=True)
 
-    # Read CSVs
-    df = pd.read_csv('sherbrooke_fixed_sensor_readings.csv', on_bad_lines='skip')
-    data2 = pd.read_csv('sherbrooke_sensor_readings_with_anomalies.csv', on_bad_lines='skip')
-
-    # Print column names for debugging
-    st.write("✅ Columns in Normal Readings CSV:", df.columns.tolist())
-    st.write("✅ Columns in Anomalies CSV:", data2.columns.tolist())
+    # Read the datasets
+    df = pd.read_csv("sherbrooke_fixed_sensor_readings.csv", on_bad_lines='skip')
+    data2 = pd.read_csv("sherbrooke_sensor_readings_with_anomalies.csv", on_bad_lines='skip')
 
     # Check and create datetime if columns are present
     if 'Date' in df.columns and 'Time' in df.columns:
         df['Datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'], errors='coerce')
         df.drop(columns=['Date', 'Time'], inplace=True)
-
     if 'Date' in data2.columns and 'Time' in data2.columns:
         data2['Datetime'] = pd.to_datetime(data2['Date'] + ' ' + data2['Time'], errors='coerce')
         data2.drop(columns=['Date', 'Time'], inplace=True)
 
-    # Only set index if 'Datetime' was created
+    # Only set index if 'Datetime' exists
     if 'Datetime' in df.columns:
         df.set_index('Datetime', inplace=True)
     if 'Datetime' in data2.columns:
@@ -67,24 +63,17 @@ def load_and_preprocess():
 
     return df, data2
 
-# ✅ Call and load the data
+# ✅ Call once to load the data
 df, data2 = load_and_preprocess()
 
 # Sidebar clock and dataset selector
 st.sidebar.markdown(f" **Current Time:** {datetime.now().strftime('%I:%M:%S %p')}")
-
-
-
-
-
-
-
-
 dataset_choice = st.sidebar.radio("🗂 Select Dataset:", ["Normal Readings", "Anomalies"])
 
 # Select the appropriate dataset
-df, data2 = load_and_preprocess()
 data = df if dataset_choice == "Normal Readings" else data2
+
+# Sidebar info block
 
 with st.sidebar.expander("📄 Dashboard Info", expanded=False):
     st.markdown("""
