@@ -21,20 +21,20 @@ st.markdown("""
 @st.cache_data
 def load_and_preprocess():
     # Google Drive file IDs
-    file_id_1 = "1dL3siMY6KaX1z0f6C5GVgTlJ06b7_Wru"  # fixed.csv
-    file_id_2 = "1CHO_ToDIw7EET0TfAb1xOV4VynIYPrh8"  # anomalies.csv
+    fixed_id = "1dL3siMY6KaX1z0f6C5GVgTlJ06b7_Wru"
+    anomalies_id = "1CHO_ToDIw7EET0TfAb1xOV4VynIYPrh8"
 
     # Construct Google Drive URLs
-    url1 = f"https://drive.google.com/uc?id={file_id_1}"
-    url2 = f"https://drive.google.com/uc?id={file_id_2}"
+    url1 = f"https://drive.google.com/uc?id={fixed_id}"
+    url2 = f"https://drive.google.com/uc?id={anomalies_id}"
 
     # Download CSV files from Google Drive
-    gdown.download(url1, 'fixed.csv', quiet=True)
-    gdown.download(url2, 'anomalies.csv', quiet=True)
+    gdown.download(url1, 'sherbrooke_fixed_sensor_readings.csv', quiet=False, fuzzy=True)
+    gdown.download(url2, 'sherbrooke_sensor_readings_with_anomalies.csv', quiet=False, fuzzy=True)
 
     # Read the CSV files
-    df = pd.read_csv('fixed.csv', on_bad_lines='skip')
-    data2 = pd.read_csv('anomalies.csv', on_bad_lines='skip')
+    df = pd.read_csv('sherbrooke_fixed_sensor_readings.csv', on_bad_lines='skip')
+    data2 = pd.read_csv('sherbrooke_sensor_readings_with_anomalies.csv', on_bad_lines='skip')
 
     # Combine Date and Time into Datetime
     if 'Date' in df.columns and 'Time' in df.columns:
@@ -63,6 +63,9 @@ def load_and_preprocess():
 
 # ✅ Call the function to load the data
 df, data2 = load_and_preprocess()
+
+
+
 
 
 # Sidebar option to select dataset
