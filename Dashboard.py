@@ -191,12 +191,24 @@ st.markdown("## 🌡️ Real-Time Sensor Overview")
 
 # Initialize with a sample row (only once)
 if 'random_row' not in st.session_state:
+    if not data.empty:
     st.session_state.random_row = data.sample(1).iloc[0]
+    st.session_state.last_update = datetime.now()
+else:
+    st.warning("⚠️ No data available to sample.")
+    st.stop()
+
     st.session_state.last_update = datetime.datetime.now()
 
 # Manual Refresh Button
 if st.button("🔁 Refresh Sensor Data"):
+    if not data.empty:
     st.session_state.random_row = data.sample(1).iloc[0]
+    st.session_state.last_update = datetime.now()
+else:
+    st.warning("⚠️ No data available to refresh.")
+    st.stop()
+
     st.session_state.last_update = datetime.datetime.now()
 
 # Display last update timestamp
