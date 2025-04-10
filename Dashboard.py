@@ -93,6 +93,27 @@ dataset_choice = st.sidebar.radio("📁 Select Dataset:", ["Normal Readings", "A
 data = df if dataset_choice == "Normal Readings" else data2
 
 
+st.sidebar.markdown("## 🧪 Debug Info")
+
+# Check file sizes
+import os
+st.sidebar.write("📦 Normal file size (MB):", round(os.path.getsize("sherbrooke_fixed_sensor_readings.csv") / 1e6, 2))
+st.sidebar.write("📦 Anomalies file size (MB):", round(os.path.getsize("sherbrooke_sensor_readings_with_anomalies.csv") / 1e6, 2))
+
+# Preview top lines to confirm it's real CSV
+try:
+    st.sidebar.code(open("sherbrooke_fixed_sensor_readings.csv", "r").readlines()[0:5])
+except Exception as e:
+    st.sidebar.error(f"Normal CSV Read Error: {e}")
+
+try:
+    st.sidebar.code(open("sherbrooke_sensor_readings_with_anomalies.csv", "r").readlines()[0:5])
+except Exception as e:
+    st.sidebar.error(f"Anomalies CSV Read Error: {e}")
+
+
+
+
 # Sidebar info block
 
 with st.sidebar.expander("📄 Dashboard Info", expanded=False):
