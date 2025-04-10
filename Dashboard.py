@@ -28,15 +28,19 @@ def load_and_preprocess():
     url1 = f"https://drive.google.com/uc?id={fixed_id}"
     url2 = f"https://drive.google.com/uc?id={anomalies_id}"
 
-    # Download CSV files from Google Drive
+    # Download CSVs
     gdown.download(url1, 'sherbrooke_fixed_sensor_readings.csv', quiet=False, fuzzy=True)
     gdown.download(url2, 'sherbrooke_sensor_readings_with_anomalies.csv', quiet=False, fuzzy=True)
 
-    # Read the CSV files
+    # Read CSVs
     df = pd.read_csv('sherbrooke_fixed_sensor_readings.csv', on_bad_lines='skip')
     data2 = pd.read_csv('sherbrooke_sensor_readings_with_anomalies.csv', on_bad_lines='skip')
 
-    # Combine Date and Time into Datetime
+    # Print column names for debugging
+    st.write("✅ Columns in Normal Readings CSV:", df.columns.tolist())
+    st.write("✅ Columns in Anomalies CSV:", data2.columns.tolist())
+
+    # Check and create datetime if columns are present
     if 'Date' in df.columns and 'Time' in df.columns:
         df['Datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'], errors='coerce')
         df.drop(columns=['Date', 'Time'], inplace=True)
@@ -45,32 +49,35 @@ def load_and_preprocess():
         data2['Datetime'] = pd.to_datetime(data2['Date'] + ' ' + data2['Time'], errors='coerce')
         data2.drop(columns=['Date', 'Time'], inplace=True)
 
-    # Set Datetime as index
-    df.set_index('Datetime', inplace=True)
-    data2.set_index('Datetime', inplace=True)
+    # Only set index if 'Datetime' was created
+    if 'Datetime' in df.columns:
+        df.set_index('Datetime', inplace=True)
+    if 'Datetime' in data2.columns:
+        data2.set_index('Datetime', inplace=True)
 
-    # Convert Gas_Level to numeric codes if present
+    # Encode Gas_Level if present
     if 'Gas_Level' in df.columns:
         df['Gas_Level'] = df['Gas_Level'].astype('category').cat.codes
     if 'Gas_Level' in data2.columns:
         data2['Gas_Level'] = data2['Gas_Level'].astype('category').cat.codes
 
-    # Drop missing rows
+    # Clean missing data
     df.dropna(inplace=True)
     data2.dropna(inplace=True)
 
     return df, data2
 
-# ✅ Call the function to load the data
+# ✅ Call and load the data
 df, data2 = load_and_preprocess()
 
-
-
-
-
-# Sidebar option to select dataset
-from datetime import datetime
+# Sidebar clock and dataset selector
 st.sidebar.markdown(f" **Current Time:** {datetime.now().strftime('%I:%M:%S %p')}")
+
+
+
+
+
+
 
 
 dataset_choice = st.sidebar.radio("🗂 Select Dataset:", ["Normal Readings", "Anomalies"])
