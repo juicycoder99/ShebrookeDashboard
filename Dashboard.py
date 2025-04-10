@@ -20,16 +20,20 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ✅ Function to download large Google Drive files
+import requests
+
 def download_large_file_from_google_drive(file_id, destination):
+    session = requests.Session()
     URL = "https://docs.google.com/uc?export=download"
-    with requests.Session() as session:
-        response = session.get(URL, params={"id": file_id}, stream=True)
-        token = get_confirm_token(response)
 
-        if token:
-            response = session.get(URL, params={"id": file_id, "confirm": token}, stream=True)
+    response = session.get(URL, params={"id": file_id}, stream=True)
+    token = get_confirm_token(response)
 
-        save_response_content(response, destination)
+    if token:
+        params = {"id": file_id, "confirm": token}
+        response = session.get(URL, params=params, stream=True)
+
+    save_response_content(response, destination)
 
 def get_confirm_token(response):
     for key, value in response.cookies.items():
@@ -44,18 +48,19 @@ def save_response_content(response, destination, chunk_size=32768):
                 f.write(chunk)
 
 
+
 # ✅ Cached loader + preprocessor
 @st.cache_data
 def load_and_preprocess():
     # Google Drive file IDs
-    file_id_1 = "1dL3siMY6KaX1z0f6C5GVgTlJ06b7_Wru"  # Normal readings
-    file_id_2 = "1CHO_ToDIw7EET0TfAb1xOV4VynIYPrh8"  # Anomalies
+    file_id_1 = "1dL3siMY6KaX1z0f6C5GVgTlJ06b7_Wru"
+    file_id_2 = "1CHO_ToDIw7EET0TfAb1xOV4VynIYPrh8"
 
-    # Use custom downloader instead of gdown
+    # Download from Drive
     download_large_file_from_google_drive(file_id_1, "sherbrooke_fixed_sensor_readings.csv")
     download_large_file_from_google_drive(file_id_2, "sherbrooke_sensor_readings_with_anomalies.csv")
 
-    # Read and preprocess datasets
+    # Load CSVs
     df = pd.read_csv("sherbrooke_fixed_sensor_readings.csv", on_bad_lines='skip')
     data2 = pd.read_csv("sherbrooke_sensor_readings_with_anomalies.csv", on_bad_lines='skip')
 
