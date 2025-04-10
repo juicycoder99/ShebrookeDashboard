@@ -25,8 +25,10 @@ def download_large_file_from_google_drive(file_id, destination):
     with requests.Session() as session:
         response = session.get(URL, params={"id": file_id}, stream=True)
         token = get_confirm_token(response)
+
         if token:
             response = session.get(URL, params={"id": file_id, "confirm": token}, stream=True)
+
         save_response_content(response, destination)
 
 def get_confirm_token(response):
@@ -41,6 +43,7 @@ def save_response_content(response, destination, chunk_size=32768):
             if chunk:
                 f.write(chunk)
 
+
 # ✅ Cached loader + preprocessor
 @st.cache_data
 def load_and_preprocess():
@@ -48,57 +51,14 @@ def load_and_preprocess():
     file_id_1 = "1dL3siMY6KaX1z0f6C5GVgTlJ06b7_Wru"  # Normal readings
     file_id_2 = "1CHO_ToDIw7EET0TfAb1xOV4VynIYPrh8"  # Anomalies
 
-    # Download the files
+    # Use custom downloader instead of gdown
     download_large_file_from_google_drive(file_id_1, "sherbrooke_fixed_sensor_readings.csv")
     download_large_file_from_google_drive(file_id_2, "sherbrooke_sensor_readings_with_anomalies.csv")
 
-    # Read the datasets
+    # Read and preprocess datasets
     df = pd.read_csv("sherbrooke_fixed_sensor_readings.csv", on_bad_lines='skip')
     data2 = pd.read_csv("sherbrooke_sensor_readings_with_anomalies.csv", on_bad_lines='skip')
 
-
-
-    #trying to fix**********************************************************************************************************8
-    print("✅ DF shape:", df.shape)
-    print("✅ Anomalies shape:", data2.shape)
-
-
-    
-
-    st.sidebar.write("📁 Normal File Exists:", os.path.exists("sherbrooke_fixed_sensor_readings.csv"))
-    st.sidebar.write("📁 Anomaly File Exists:", os.path.exists("sherbrooke_sensor_readings_with_anomalies.csv"))
-
-
-    # ✅ Preview first lines from the normal file
-    try:
-        with open("sherbrooke_fixed_sensor_readings.csv", "r") as f:
-            st.sidebar.write("📄 First lines from Normal CSV:")
-            for i, line in enumerate(f):
-                st.sidebar.text(line)
-                if i == 9:
-                    break
-    except Exception as e:
-        st.sidebar.error(f"❌ Failed to read Normal file: {e}")
-
-
-
-    # ✅ Preview first lines from the anomaly file
-    try:
-        with open("sherbrooke_sensor_readings_with_anomalies.csv", "r") as f:
-            st.sidebar.write("📄 First lines from Anomaly CSV:")
-            for i, line in enumerate(f):
-                st.sidebar.text(line)
-                if i == 9:
-                    break
-    except Exception as e:
-        st.sidebar.error(f"❌ Failed to read Anomaly file: {e}")
-
-
-
-
-
-
-    # Convert Date + Time to Datetime
     if 'Date' in df.columns and 'Time' in df.columns:
         df['Datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'], errors='coerce')
         df.drop(columns=['Date', 'Time'], inplace=True)
@@ -120,6 +80,7 @@ def load_and_preprocess():
     data2.dropna(inplace=True)
 
     return df, data2
+
 
 # ✅ Load the data once
 df, data2 = load_and_preprocess()
