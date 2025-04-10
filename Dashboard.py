@@ -26,13 +26,15 @@ def download_large_file_from_google_drive(file_id, destination):
     session = requests.Session()
     URL = "https://docs.google.com/uc?export=download"
 
+    # First request
     response = session.get(URL, params={"id": file_id}, stream=True)
     token = get_confirm_token(response)
 
+    # Second request if token is found
     if token:
-        params = {"id": file_id, "confirm": token}
-        response = session.get(URL, params=params, stream=True)
+        response = session.get(URL, params={"id": file_id, "confirm": token}, stream=True)
 
+    # Save the file
     save_response_content(response, destination)
 
 def get_confirm_token(response):
@@ -46,6 +48,7 @@ def save_response_content(response, destination, chunk_size=32768):
         for chunk in response.iter_content(chunk_size):
             if chunk:
                 f.write(chunk)
+
 
 
 
@@ -89,6 +92,11 @@ def load_and_preprocess():
 
 # ✅ Load the data once
 df, data2 = load_and_preprocess()
+
+
+st.sidebar.success(f"Normal File Shape: {df.shape}")
+st.sidebar.success(f"Anomaly File Shape: {data2.shape}")
+
 
 # 🕒 Sidebar clock
 st.sidebar.markdown(f" **Current Time:** {datetime.now().strftime('%I:%M:%S %p')}")
