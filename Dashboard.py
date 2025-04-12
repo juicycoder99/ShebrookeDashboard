@@ -69,6 +69,7 @@ def load_and_preprocess():
 
 
 
+
 # ✅ Load the data once
 df, data2 = load_and_preprocess()
 
