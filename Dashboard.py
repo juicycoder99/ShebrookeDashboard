@@ -468,29 +468,42 @@ if plot_env_option == "Monthly Trends of All Variables":
 
 
 # ➤ 2. Seasonal Trends of Environmental Variables
-elif plot_env_option == "Seasonal Trends of Environmental Variables":
-    data['Season'] = data.index.month.map({
-        12: "Winter", 1: "Winter", 2: "Winter",
-        3: "Spring", 4: "Spring", 5: "Spring",
-        6: "Summer", 7: "Summer", 8: "Summer",
-        9: "Fall", 10: "Fall", 11: "Fall"
-    })
+if plot_env_option == "Seasonal Trends of Environmental Variables":
+    # Let user pick the variable
+    var_choice = st.selectbox("📌 Choose variable to view by season:", 
+                              ["Temperature", "Humidity", "Moisture", "Gas"], 
+                              index=0)
 
-    season_avg = data.groupby('Season')[["Temperature", "Humidity", "Moisture"]].mean().reset_index()
-    season_avg = season_avg.melt(id_vars='Season', var_name='Variable', value_name='Average')
-    season_avg['Season'] = pd.Categorical(season_avg['Season'], ["Spring", "Summer", "Fall", "Winter"])
+    # Add a 'Season' column if not present
+    if 'Season' not in data.columns:
+        data['Season'] = data.index.month.map({
+            12: "Winter", 1: "Winter", 2: "Winter",
+            3: "Spring", 4: "Spring", 5: "Spring",
+            6: "Summer", 7: "Summer", 8: "Summer",
+            9: "Fall", 10: "Fall", 11: "Fall"
+        })
 
-    chart = alt.Chart(season_avg).mark_bar().encode(
-        x=alt.X("Season:N", sort=["Spring", "Summer", "Fall", "Winter"]),
-        y="Average:Q",
-        color="Variable:N",
-        column="Variable:N",
-        tooltip=["Season", "Variable", "Average"]
+    # Group and calculate seasonal average for selected variable
+    seasonal_avg = data.groupby("Season")[var_choice].mean().reset_index()
+
+    # Sort by season order
+    season_order = ["Spring", "Summer", "Fall", "Winter"]
+    seasonal_avg["Season"] = pd.Categorical(seasonal_avg["Season"], categories=season_order, ordered=True)
+    seasonal_avg = seasonal_avg.sort_values("Season")
+
+    # Plot using Altair
+    chart = alt.Chart(seasonal_avg).mark_bar(color="steelblue").encode(
+        x=alt.X("Season:N", sort=season_order),
+        y=alt.Y(f"{var_choice}:Q", title=f"Average {var_choice}"),
+        tooltip=["Season", var_choice]
     ).properties(
-        title="🌤️ Seasonal Averages of Temperature, Humidity, and Moisture"
+        title=f"Seasonal Average of {var_choice}",
+        width=600,
+        height=400
     )
 
     st.altair_chart(chart, use_container_width=True)
+
 
 # ➤ 3. Main Correlation Matrix
 elif plot_env_option == "Correlation Matrix (Main Vars)":
