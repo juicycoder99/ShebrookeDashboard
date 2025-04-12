@@ -1,37 +1,54 @@
-import altair as alt
 import streamlit as st
-import pandas as pd  # 👈 Make sure this is included
-import altair as alt
-import os
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from datetime import datetime, timedelta
 
+# Set Streamlit page config
+st.set_page_config(page_title="Temperature, Humidity, Moisture & Gas Dashboard", layout="wide")
 
+# Dashboard Header
+st.markdown("""
+    <h1 style='text-align: center; color: white; background-color: #176B87; padding: 15px; border-radius: 10px;'>
+        Temperature, Humidity, Moisture & Gas Dashboard
+    </h1>
+""", unsafe_allow_html=True)
+
+# ✅ Cached data loader and preprocessor
 @st.cache_data
-def load_data():
-    df = pd.read_csv(
-        'data/sherbrooke_fixed_sensor_readings.csv',
-        nrows=1000,  # 👈 Load only 1000 rows to preview
-        parse_dates=[['Date', 'Time']],  # 👈 Combine Date + Time
-        on_bad_lines='skip'
-    )
-    df.rename(columns={'Date_Time': 'Datetime'}, inplace=True)
-    return df
+def load_and_preprocess():
+    try:
+        # Load local CSVs
+        df = pd.read_csv("datasets/sherbrooke_fixed_sensor_readings.csv", on_bad_lines='skip')
+        data2 = pd.read_csv("datasets/sherbrooke_sensor_readings_with_anomalies.csv", on_bad_lines='skip')
+    except Exception as e:
+        st.error(f"❌ Error loading datasets: {e}")
+        return pd.DataFrame(), pd.DataFrame()
 
-df_plot = load_data()
+    # Function to clean and process each dataset
+    def process_data(data):
+        # Combine Date and Time
+        if 'Date' in data.columns and 'Time' in data.columns:
+            data['Datetime'] = pd.to_datetime(data['Date'] + ' ' + data['Time'], errors='coerce')
+            data.drop(columns=['Date', 'Time'], inplace=True)
 
-st.markdown("### 📊 Select variable to visualize:")
-plot_option = st.selectbox("Select variable to visualize:", ['Temperature', 'Humidity', 'Moisture', 'Gas'])
+        # Encode Gas_Level as numeric
+        if 'Gas_Level' in data.columns:
+            data['Gas_Level'] = data['Gas_Level'].astype('category').cat.codes
 
-# ✅ Plot basic Altair chart
-import altair as alt
+        # Encode Location if exists
+        if 'Location' in data.columns:
+            data['Location_Code'] = data['Location'].astype('category').cat.codes
 
-chart = alt.Chart(df_plot).mark_line().encode(
-    x='Datetime:T',
-    y=plot_option,
-    tooltip=['Datetime', plot_option]
-).properties(
-    width=800,
-    height=400
-).interactive()
+        # Drop missing and sort by datetime
+        data.dropna(inplace=True)
+        if 'Datetime' in data.columns:
+            data.sort_values(by='Datetime', inplace=True)
 
-st.altair_chart(chart, use_container_width=True)
+        return data.reset_index(drop=True)
 
+    # Apply preprocessing
+    df = process_data(df)
+    data2 = process_data(data2)
+
+    return df, data2
