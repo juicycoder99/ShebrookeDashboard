@@ -1,39 +1,25 @@
-import streamlit as st
-import pandas as pd
-import os
+import altair as alt
 
-# Set page config
-st.set_page_config(page_title="Preview Sherbrooke Dataset", layout="wide")
+# Optional: allow user to choose variable to plot
+plot_option = st.selectbox("📊 Select variable to visualize:", ['Temperature', 'Humidity', 'Moisture', 'Gas'])
 
-st.markdown("## 📄 Preview Datasets from Kaggle")
+# Convert Date & Time to full datetime
+df_plot = pd.read_csv('data/sherbrooke_fixed_sensor_readings.csv')  # Load full dataset
+df_plot['Datetime'] = pd.to_datetime(df_plot['Date'] + ' ' + df_plot['Time'], errors='coerce')
 
-# ✅ Add Kaggle credentials
-os.environ['KAGGLE_USERNAME'] = 'jibrilhussaini'
-os.environ['KAGGLE_KEY'] = 'your_kaggle_key_here'  # Replace this with your actual key from kaggle.json
+# Filter out missing datetime if any
+df_plot = df_plot.dropna(subset=['Datetime'])
 
-@st.cache_data
-def download_and_load():
-    import zipfile
-    import kaggle
+# Build Altair interactive line chart
+line_chart = alt.Chart(df_plot).mark_line(interpolate='monotone').encode(
+    x=alt.X('Datetime:T', title='Datetime'),
+    y=alt.Y(f'{plot_option}:Q', title=plot_option),
+    tooltip=['Datetime:T', f'{plot_option}:Q', 'Gas_Level', 'Location']
+).properties(
+    title=f'{plot_option} Over Time (Interactive)',
+    width=900,
+    height=400
+).interactive()
 
-    # ✅ Download dataset from Kaggle
-    kaggle.api.dataset_download_files('jibrilhussaini/synthetic-sherbrooke-sensor-readings', path='data', unzip=True)
-
-    # ✅ Load the CSVs
-    df = pd.read_csv('data/sherbrooke_fixed_sensor_readings.csv')
-    data2 = pd.read_csv('data/sherbrooke_sensor_readings_with_anomalies.csv')
-
-    return df.head(), data2.head()
-
-# ✅ Run the loader
-try:
-    fixed_df, anomalies_df = download_and_load()
-
-    st.success("✅ Fixed Dataset Preview")
-    st.dataframe(fixed_df)
-
-    st.success("✅ Anomalies Dataset Preview")
-    st.dataframe(anomalies_df)
-
-except Exception as e:
-    st.error(f"❌ Failed to load dataset: {e}")
+# Display chart
+st.altair_chart(line_chart, use_container_width=True)
