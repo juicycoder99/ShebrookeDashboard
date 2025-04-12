@@ -250,7 +250,7 @@ if plot_option == "Seasonal Average":
 
     fig, ax = plt.subplots(figsize=(7, 4))
     sns.barplot(x=seasonal_trends.index, y=seasonal_trends.values, palette="coolwarm", ax=ax)
-    ax.set_title("🌤️ Average Gas Levels Across Seasons")
+    ax.set_title("Average Gas Levels Across Seasons")
     ax.set_xlabel("Season")
     ax.set_ylabel("Average Gas Level")
     st.pyplot(fig)
@@ -262,7 +262,7 @@ elif plot_option == "Monthly Trend":
 
     fig, ax = plt.subplots(figsize=(10, 5))
     sns.lineplot(x=monthly_trends.index, y=monthly_trends.values, marker="o", ax=ax)
-    ax.set_title("📆 Monthly Gas Level Trends")
+    ax.set_title("Monthly Gas Level Trends")
     ax.set_xlabel("Month")
     ax.set_ylabel("Average Gas Level")
     ax.set_xticks(range(1, 13))
@@ -281,7 +281,7 @@ elif plot_option == "Day vs Night Gas Levels":
 
     fig, ax = plt.subplots(figsize=(6, 4))
     sns.barplot(x=day_night_avg.index, y=day_night_avg.values, palette="Set2", ax=ax)
-    ax.set_title("🌗 Gas Levels: Day vs Night")
+    ax.set_title("Gas Levels: Day vs Night")
     ax.set_ylabel("Average Gas Level")
     st.pyplot(fig)
 
@@ -297,7 +297,7 @@ elif plot_option == "Sensor-wise Comparison":
     for i, (value, label) in enumerate(zip(sensor_avg.values, sensor_avg.index)):
         ax.text(value + 0.3, i, f"{value:.2f}", va='center', fontsize=9)
 
-    ax.set_title(f"📍 Top {top_n} Sensor Locations by Gas Level")
+    ax.set_title(f"Top {top_n} Sensor Locations by Gas Level")
     ax.set_xlabel("Average Gas Level")
     ax.set_ylabel("Sensor Location")
     plt.tight_layout()
