@@ -20,44 +20,62 @@ st.markdown("""
 # ✅ Cached loader + preprocessor
 @st.cache_data
 def load_and_preprocess():
-    import gdown
     import os
+    import requests
     import pandas as pd
 
-    # ✅ Use your actual shared folder URL
-    folder_url = "https://drive.google.com/drive/folders/1fFO5Ocp5Yu0DmXNdH63M0a1S374wou2n"
-    output_dir = "data"
+    def download_from_drive(file_id, destination):
+        # Handles download of large files with confirmation tokens
+        URL = "https://docs.google.com/uc?export=download"
 
-    # ✅ Download all files from the folder
+        session = requests.Session()
+        response = session.get(URL, params={'id': file_id}, stream=True)
+        token = get_confirm_token(response)
+
+        if token:
+            params = {'id': file_id, 'confirm': token}
+            response = session.get(URL, params=params, stream=True)
+
+        save_response_content(response, destination)
+
+    def get_confirm_token(response):
+        for key, value in response.cookies.items():
+            if key.startswith('download_warning'):
+                return value
+        return None
+
+    def save_response_content(response, destination):
+        CHUNK_SIZE = 32768
+        with open(destination, "wb") as f:
+            for chunk in response.iter_content(CHUNK_SIZE):
+                if chunk:  # filter out keep-alive chunks
+                    f.write(chunk)
+
+    # ✅ Define file IDs and names
+    files = {
+        "fixed.csv": "1dL3siMY6KaX1z0f6C5GVgTlJ06b7_Wru",
+        "anomalies.csv": "1CHO_ToDIw7EET0TfAb1xOV4VynIYPrh8"
+    }
+
+    # ✅ Download files
+    for name, fid in files.items():
+        if not os.path.exists(name):  # skip re-download if already exists
+            download_from_drive(fid, name)
+
+    # ✅ Load files
     try:
-        gdown.download_folder(url=folder_url, output=output_dir, quiet=False, use_cookies=False)
+        df = pd.read_csv("fixed.csv", on_bad_lines='skip')
+        data2 = pd.read_csv("anomalies.csv", on_bad_lines='skip')
     except Exception as e:
-        st.error(f"❌ Failed to download datasets from folder: {e}")
+        st.error(f"❌ Error reading CSVs: {e}")
         return pd.DataFrame(), pd.DataFrame()
 
-    # ✅ File paths from folder
-    file1 = os.path.join(output_dir, "sherbrooke_fixed_sensor_readings.csv")
-    file2 = os.path.join(output_dir, "sherbrooke_sensor_readings_with_anomalies.csv")
-
-    # ✅ Check if files exist
-    if not os.path.exists(file1) or not os.path.exists(file2):
-        st.error("❌ One or both files were not found in the downloaded folder.")
-        return pd.DataFrame(), pd.DataFrame()
-
-    # ✅ Load CSVs
-    try:
-        df = pd.read_csv(file1, on_bad_lines='skip')
-        data2 = pd.read_csv(file2, on_bad_lines='skip')
-    except Exception as e:
-        st.error(f"❌ Error reading CSV files: {e}")
-        return pd.DataFrame(), pd.DataFrame()
-
-    # ✅ Combine Date + Time
+    # ✅ Combine datetime
     if 'Date' in df.columns and 'Time' in df.columns:
         df['Datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'], errors='coerce')
         df.drop(columns=['Date', 'Time'], inplace=True)
 
-    # ✅ Encode Gas_Level + Drop missing
+    # ✅ Encode and clean
     for d in [df, data2]:
         if 'Gas_Level' in d.columns:
             d['Gas_Level'] = d['Gas_Level'].astype('category').cat.codes
