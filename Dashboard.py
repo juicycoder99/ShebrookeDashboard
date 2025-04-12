@@ -204,3 +204,98 @@ if 'last_update' in st.session_state:
     st.caption(f"🕒 Last updated: {st.session_state.last_update.strftime('%Y-%m-%d %I:%M:%S %p')}")
 
 
+
+# ----------------------- Realtime Sensor Metrics Display -----------------------
+
+# 📊 Display key metrics for selected row
+random_row = st.session_state.random_row
+cols = st.columns(4)
+
+cols[0].metric(label=f" Temperature ({random_row['Location']})", value=f"{round(random_row['Temperature'], 2)} °C", delta="Last update")
+cols[1].metric(label=f" Humidity ({random_row['Location']})", value=f"{round(random_row['Humidity'], 2)} %", delta="Last update")
+cols[2].metric(label=f" Moisture ({random_row['Location']})", value=f"{round(random_row['Moisture'], 2)}", delta="Last update")
+cols[3].metric(label=f" Gas ({random_row['Location']})", value=f"{round(random_row['Gas'], 2)}", delta="Last update")
+
+
+# ----------------------- Trend Visualizer Section -----------------------
+
+# 📈 Dropdown to choose gas visualization mode
+plot_option = st.selectbox("📈 Select Gas Level Trend View:", [
+    "Select an option", 
+    "Seasonal Average", 
+    "Monthly Trend", 
+    "Day vs Night Gas Levels", 
+    "Sensor-wise Comparison"
+])
+
+# ➤ 1. Seasonal Average Gas Levels
+if plot_option == "Seasonal Average":
+    data['Season'] = data.index.month.map({
+        12: "Winter", 1: "Winter", 2: "Winter",
+        3: "Spring", 4: "Spring", 5: "Spring",
+        6: "Summer", 7: "Summer", 8: "Summer",
+        9: "Fall", 10: "Fall", 11: "Fall"
+    })
+
+    seasonal_trends = data.groupby('Season')['Gas'].mean().reindex(["Spring", "Summer", "Fall", "Winter"])
+
+    fig, ax = plt.subplots(figsize=(7, 4))
+    sns.barplot(x=seasonal_trends.index, y=seasonal_trends.values, palette="coolwarm", ax=ax)
+    ax.set_title("🌤️ Average Gas Levels Across Seasons")
+    ax.set_xlabel("Season")
+    ax.set_ylabel("Average Gas Level")
+    st.pyplot(fig)
+
+
+# ➤ 2. Monthly Gas Level Trend
+elif plot_option == "Monthly Trend":
+    monthly_trends = data.groupby(data.index.month)['Gas'].mean()
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    sns.lineplot(x=monthly_trends.index, y=monthly_trends.values, marker="o", ax=ax)
+    ax.set_title("📆 Monthly Gas Level Trends")
+    ax.set_xlabel("Month")
+    ax.set_ylabel("Average Gas Level")
+    ax.set_xticks(range(1, 13))
+    ax.set_xticklabels(["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"])
+    ax.grid(True)
+    st.pyplot(fig)
+
+
+# ➤ 3. Day vs Night Comparison
+elif plot_option == "Day vs Night Gas Levels":
+    data['Hour'] = data.index.hour
+    data['TimeOfDay'] = data['Hour'].apply(lambda x: 'Day (6AM–6PM)' if 6 <= x < 18 else 'Night (6PM–6AM)')
+
+    day_night_avg = data.groupby('TimeOfDay')['Gas'].mean().reindex(['Day (6AM–6PM)', 'Night (6PM–6AM)'])
+
+    fig, ax = plt.subplots(figsize=(6, 4))
+    sns.barplot(x=day_night_avg.index, y=day_night_avg.values, palette="Set2", ax=ax)
+    ax.set_title("🌗 Gas Levels: Day vs Night")
+    ax.set_ylabel("Average Gas Level")
+    st.pyplot(fig)
+
+
+# ➤ 4. Sensor-wise Gas Level Comparison
+elif plot_option == "Sensor-wise Comparison":
+    top_n = 20
+    sensor_avg = data.groupby('Location')['Gas'].mean().sort_values(ascending=False).head(top_n)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.barplot(x=sensor_avg.values, y=sensor_avg.index, palette="viridis", ax=ax)
+
+    for i, (value, label) in enumerate(zip(sensor_avg.values, sensor_avg.index)):
+        ax.text(value + 0.3, i, f"{value:.2f}", va='center', fontsize=9)
+
+    ax.set_title(f"📍 Top {top_n} Sensor Locations by Gas Level")
+    ax.set_xlabel("Average Gas Level")
+    ax.set_ylabel("Sensor Location")
+    plt.tight_layout()
+    st.pyplot(fig)
+
+
+# ➤ Default Info Message
+elif plot_option == "Select an option":
+    st.info("ℹ️ Please select a gas trend view to begin visualization.")
+
