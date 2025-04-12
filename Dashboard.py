@@ -52,3 +52,23 @@ def load_and_preprocess():
     data2 = process_data(data2)
 
     return df, data2
+
+
+# ✅ Load the preprocessed data
+df, data2 = load_and_preprocess()
+
+# ========== 📊 SIDEBAR SECTION ==========
+st.sidebar.header("📂 Dataset Information")
+
+# ✅ Display shape of loaded data
+st.sidebar.success(f"✅ Normal File Shape: {df.shape}")
+st.sidebar.success(f"✅ Anomaly File Shape: {data2.shape}")
+
+# ✅ Real-time Clock in Sidebar
+from datetime import datetime
+st.sidebar.markdown(f"**🕒 Current Time:** {datetime.now().strftime('%I:%M:%S %p')}")
+
+# ✅ Dataset toggle (normal vs anomalies)
+dataset_choice = st.sidebar.radio("📁 Select Dataset:", ["Normal Readings", "Anomalies"])
+data = df if dataset_choice == "Normal Readings" else data2
+
