@@ -22,27 +22,29 @@ st.markdown("""
 def load_and_preprocess():
     import gdown
     import os
+    import pandas as pd
 
-    file_id_1 = "1dL3siMY6KaX1z0f6C5GVgTlJ06b7_Wru"  # fixed sensor
-    file_id_2 = "1CHO_ToDIw7EET0TfAb1xOV4VynIYPrh8"  # anomalies
+    # ✅ Use your actual shared folder URL
+    folder_url = "https://drive.google.com/drive/folders/1fFO5Ocp5Yu0DmXNdH63M0a1S374wou2n"
+    output_dir = "data"
 
-    url1 = f"https://drive.google.com/uc?id={file_id_1}"
-    url2 = f"https://drive.google.com/uc?id={file_id_2}"
-
-    file1 = "fixed.csv"
-    file2 = "anomalies.csv"
-
+    # ✅ Download all files from the folder
     try:
-        gdown.download(url1, file1, quiet=False, fuzzy=True, use_cookies=True)
-        gdown.download(url2, file2, quiet=False, fuzzy=True, use_cookies=True)
+        gdown.download_folder(url=folder_url, output=output_dir, quiet=False, use_cookies=False)
     except Exception as e:
-        st.error(f"❌ Failed to download datasets from Google Drive: {e}")
+        st.error(f"❌ Failed to download datasets from folder: {e}")
         return pd.DataFrame(), pd.DataFrame()
 
+    # ✅ File paths from folder
+    file1 = os.path.join(output_dir, "sherbrooke_fixed_sensor_readings.csv")
+    file2 = os.path.join(output_dir, "sherbrooke_sensor_readings_with_anomalies.csv")
+
+    # ✅ Check if files exist
     if not os.path.exists(file1) or not os.path.exists(file2):
-        st.error("❌ One or both datasets could not be found after download.")
+        st.error("❌ One or both files were not found in the downloaded folder.")
         return pd.DataFrame(), pd.DataFrame()
 
+    # ✅ Load CSVs
     try:
         df = pd.read_csv(file1, on_bad_lines='skip')
         data2 = pd.read_csv(file2, on_bad_lines='skip')
@@ -50,19 +52,19 @@ def load_and_preprocess():
         st.error(f"❌ Error reading CSV files: {e}")
         return pd.DataFrame(), pd.DataFrame()
 
+    # ✅ Combine Date + Time
     if 'Date' in df.columns and 'Time' in df.columns:
         df['Datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'], errors='coerce')
         df.drop(columns=['Date', 'Time'], inplace=True)
 
-    if 'Gas_Level' in df.columns:
-        df['Gas_Level'] = df['Gas_Level'].astype('category').cat.codes
-    if 'Gas_Level' in data2.columns:
-        data2['Gas_Level'] = data2['Gas_Level'].astype('category').cat.codes
-
-    df.dropna(inplace=True)
-    data2.dropna(inplace=True)
+    # ✅ Encode Gas_Level + Drop missing
+    for d in [df, data2]:
+        if 'Gas_Level' in d.columns:
+            d['Gas_Level'] = d['Gas_Level'].astype('category').cat.codes
+        d.dropna(inplace=True)
 
     return df, data2
+
 
 
 
