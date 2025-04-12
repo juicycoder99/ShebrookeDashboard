@@ -68,17 +68,11 @@ df, data2 = download_and_preprocess()
 # 📊 Sidebar Info & Dataset Selector
 # ---------------------------------------------
 
-st.sidebar.header("📂 Dataset Information")
-
-# ✅ Show shape of both datasets
-st.sidebar.success(f"✅ Normal File Shape: {df.shape}")
-st.sidebar.success(f"✅ Anomaly File Shape: {data2.shape}")
-
 # 🕒 Show current time
-st.sidebar.markdown(f"⏰ **Current Time:** {datetime.now().strftime('%I:%M:%S %p')}")
+st.sidebar.markdown(f" **Current Time:** {datetime.now().strftime('%I:%M:%S %p')}")
 
 # 📁 Dataset selector
-st.sidebar.subheader("📦 Select Dataset:")
+st.sidebar.subheader("📂 Select Dataset:")
 dataset_choice = st.sidebar.radio("", ["Normal Readings", "Anomalies"])
 
 # Dynamically assign selected dataset to `data`
