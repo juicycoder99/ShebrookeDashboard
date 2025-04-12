@@ -1,16 +1,14 @@
 import streamlit as st
 import pandas as pd
+import os
 import matplotlib.pyplot as plt
 import seaborn as sns
-from datetime import datetime
-import requests  # used instead of gdown
-import os
+import datetime
+from datetime import datetime, timedelta
+import gdown
 
-# Set Streamlit page configuration
-st.set_page_config(
-    page_title="Temperature, Humidity, Moisture & Gas Dashboard", 
-    layout="wide"
-)
+# Set Streamlit page configuration 
+st.set_page_config(page_title="Temperature, Humidity, Moisture & Gas Dashboard", layout="wide")
 
 # Add a header with title
 st.markdown("""
@@ -19,65 +17,31 @@ st.markdown("""
     </h1>
 """, unsafe_allow_html=True)
 
-# ✅ Function to download large Google Drive files
-import requests
-
-def download_large_file_from_google_drive(file_id, destination):
-    session = requests.Session()
-    URL = "https://docs.google.com/uc?export=download"
-
-    # First request
-    response = session.get(URL, params={"id": file_id}, stream=True)
-    token = get_confirm_token(response)
-
-    # Second request if token is found
-    if token:
-        response = session.get(URL, params={"id": file_id, "confirm": token}, stream=True)
-
-    # Save the file
-    save_response_content(response, destination)
-
-def get_confirm_token(response):
-    for key, value in response.cookies.items():
-        if key.startswith("download_warning"):
-            return value
-    return None
-
-def save_response_content(response, destination, chunk_size=32768):
-    with open(destination, "wb") as f:
-        for chunk in response.iter_content(chunk_size):
-            if chunk:
-                f.write(chunk)
-
-
-
-
 # ✅ Cached loader + preprocessor
 @st.cache_data
 def load_and_preprocess():
+    import gdown
+
     # Google Drive file IDs
     file_id_1 = "1dL3siMY6KaX1z0f6C5GVgTlJ06b7_Wru"
     file_id_2 = "1CHO_ToDIw7EET0TfAb1xOV4VynIYPrh8"
 
-    # Download from Drive
-    download_large_file_from_google_drive(file_id_1, "sherbrooke_fixed_sensor_readings.csv")
-    download_large_file_from_google_drive(file_id_2, "sherbrooke_sensor_readings_with_anomalies.csv")
+    # Construct URLs
+    url1 = f"https://drive.google.com/uc?id={file_id_1}"
+    url2 = f"https://drive.google.com/uc?id={file_id_2}"
 
-    # Load CSVs
-    df = pd.read_csv("sherbrooke_fixed_sensor_readings.csv", on_bad_lines='skip')
-    data2 = pd.read_csv("sherbrooke_sensor_readings_with_anomalies.csv", on_bad_lines='skip')
+    # Download CSV files
+    gdown.download(url1, 'fixed.csv', quiet=True)
+    gdown.download(url2, 'anomalies.csv', quiet=True)
 
+    # 🔄 Read using default comma separator (safe for Excel-exported CSV)
+    df = pd.read_csv('fixed.csv', on_bad_lines='skip')
+    data2 = pd.read_csv('anomalies.csv', on_bad_lines='skip')
+
+    # ✅ Combine Date and Time into Datetime
     if 'Date' in df.columns and 'Time' in df.columns:
         df['Datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'], errors='coerce')
         df.drop(columns=['Date', 'Time'], inplace=True)
-    if 'Date' in data2.columns and 'Time' in data2.columns:
-        data2['Datetime'] = pd.to_datetime(data2['Date'] + ' ' + data2['Time'], errors='coerce')
-        data2.drop(columns=['Date', 'Time'], inplace=True)
-
-    if 'Datetime' in df.columns:
-        df.set_index('Datetime', inplace=True)
-    if 'Datetime' in data2.columns:
-        data2.set_index('Datetime', inplace=True)
 
     if 'Gas_Level' in df.columns:
         df['Gas_Level'] = df['Gas_Level'].astype('category').cat.codes
