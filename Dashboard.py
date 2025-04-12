@@ -382,24 +382,42 @@ if not filtered.empty:
 
     st.altair_chart(alt_chart, use_container_width=True)
 
-    # Centered summary stats (min, max, average) in red
-    with st.container():
-        st.markdown("""
-        <div style='text-align: center; display: flex; justify-content: center; gap: 60px; margin-top: 30px;'>
-            <div>
-                <div style='color: red; font-weight: bold;'>Min</div>
-                <div style='font-size: 20px; color: red;'>""" + f"{round(min_val, 2)}" + """</div>
-            </div>
-            <div>
-                <div style='color: red; font-weight: bold;'>Max</div>
-                <div style='font-size: 20px; color: red;'>""" + f"{round(max_val, 2)}" + """</div>
-            </div>
-            <div>
-                <div style='color: red; font-weight: bold;'>Average</div>
-                <div style='font-size: 20px; color: red;'>""" + f"{round(avg_val, 2)}" + """</div>
-            </div>
+    # Refined & tightly attached summary stats block (Min → Avg → Max)
+    st.markdown("""
+    <style>
+    .metric-row {
+        display: flex;
+        justify-content: center;
+        gap: 60px;
+        margin-top: -10px; /* 👈 reduce vertical gap to plot */
+    }
+    .metric-col {
+        text-align: center;
+        color: red;
+    }
+    .metric-label {
+        font-weight: bold;
+    }
+    .metric-value {
+        font-size: 20px;
+    }
+    </style>
+    
+    <div class='metric-row'>
+        <div class='metric-col'>
+            <div class='metric-label'>Min</div>
+            <div class='metric-value'>""" + f"{round(min_val, 2)}" + """</div>
         </div>
-        """, unsafe_allow_html=True)
+        <div class='metric-col'>
+            <div class='metric-label'>Average</div>
+            <div class='metric-value'>""" + f"{round(avg_val, 2)}" + """</div>
+        </div>
+        <div class='metric-col'>
+            <div class='metric-label'>Max</div>
+            <div class='metric-value'>""" + f"{round(max_val, 2)}" + """</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 else:
     st.warning("⚠️ No data found for the selected time range.")
