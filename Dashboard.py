@@ -335,13 +335,13 @@ resample_freq = ""
 today = datetime.now().date()
 
 if view_mode == "Daily":
-    selected_date = st.date_input("📅 Select a day", value=today)
+    selected_date = st.date_input("📅 Select a day", value=datetime.date(2023, 1, 1))
     filtered = data[data.index.date == selected_date]
     title = f"{variable_to_plot} - {selected_date.strftime('%B %d, %Y')} (Daily View)"
     resample_freq = "H"  # hourly
 
 elif view_mode == "Weekly":
-    selected_week = st.date_input("📅 Select any date in the week", value=today)
+    selected_week = st.date_input("📅 Select any date in the week", value=datetime.date(2023, 1, 1))
     start_of_week = selected_week - timedelta(days=selected_week.weekday())
     end_of_week = start_of_week + timedelta(days=6)
     filtered = data[(data.index.date >= start_of_week) & (data.index.date <= end_of_week)]
