@@ -421,3 +421,95 @@ if not filtered.empty:
 
 else:
     st.warning("⚠️ No data found for the selected time range.")
+
+
+
+# -------------------- Environmental Insights Section --------------------
+st.markdown("## 🌍 Environmental Insights View")
+
+plot_env_option = st.selectbox("📊 Select Environmental View Type:", 
+                               ["Select an option", 
+                                "Monthly Trends of All Variables", 
+                                "Seasonal Trends of Environmental Variables", 
+                                "Correlation Matrix (Main Vars)", 
+                                "Full Correlation Matrix (All Vars)"])
+
+# ➤ 1. Monthly Trends of All Variables
+if plot_env_option == "Monthly Trends of All Variables":
+    monthly_avg = data.groupby(data.index.month)[["Temperature", "Humidity", "Moisture", "Gas"]].mean().reset_index()
+    monthly_avg.rename(columns={"index": "Month"}, inplace=True)
+    monthly_avg["Month"] = monthly_avg["Month"].apply(lambda x: datetime(2023, x, 1).strftime("%b"))
+
+    # Melt for Altair
+    melted = monthly_avg.melt(id_vars=["Month"], var_name="Variable", value_name="Average")
+
+    chart = alt.Chart(melted).mark_line(point=True).encode(
+        x=alt.X("Month:N", sort=["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]),
+        y="Average:Q",
+        color="Variable:N",
+        tooltip=["Variable", "Month", "Average"]
+    ).properties(
+        title="📈 Monthly Trends of Environmental Variables",
+        width=800,
+        height=400
+    ).interactive()
+
+    st.altair_chart(chart, use_container_width=True)
+
+# ➤ 2. Seasonal Trends of Environmental Variables
+elif plot_env_option == "Seasonal Trends of Environmental Variables":
+    data['Season'] = data.index.month.map({
+        12: "Winter", 1: "Winter", 2: "Winter",
+        3: "Spring", 4: "Spring", 5: "Spring",
+        6: "Summer", 7: "Summer", 8: "Summer",
+        9: "Fall", 10: "Fall", 11: "Fall"
+    })
+
+    season_avg = data.groupby('Season')[["Temperature", "Humidity", "Moisture"]].mean().reset_index()
+    season_avg = season_avg.melt(id_vars='Season', var_name='Variable', value_name='Average')
+    season_avg['Season'] = pd.Categorical(season_avg['Season'], ["Spring", "Summer", "Fall", "Winter"])
+
+    chart = alt.Chart(season_avg).mark_bar().encode(
+        x=alt.X("Season:N", sort=["Spring", "Summer", "Fall", "Winter"]),
+        y="Average:Q",
+        color="Variable:N",
+        column="Variable:N",
+        tooltip=["Season", "Variable", "Average"]
+    ).properties(
+        title="🌤️ Seasonal Averages of Temperature, Humidity, and Moisture"
+    )
+
+    st.altair_chart(chart, use_container_width=True)
+
+# ➤ 3. Main Correlation Matrix
+elif plot_env_option == "Correlation Matrix (Main Vars)":
+    corr = data[["Temperature", "Humidity", "Moisture", "Gas"]].corr()
+
+    fig, ax = plt.subplots(figsize=(7, 5))
+    sns.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f", square=True, ax=ax)
+    ax.set_title("🧩 Correlation Matrix of Main Variables")
+    st.pyplot(fig)
+
+# ➤ 4. Full Correlation Matrix with Time-based Features
+elif plot_env_option == "Full Correlation Matrix (All Vars)":
+    df_corr = data.copy()
+
+    if 'Hour' not in df_corr.columns:
+        df_corr["Hour"] = df_corr.index.hour
+    if 'DayOfWeek' not in df_corr.columns:
+        df_corr["DayOfWeek"] = df_corr.index.dayofweek
+    if 'Month' not in df_corr.columns:
+        df_corr["Month"] = df_corr.index.month
+
+    corr_matrix = df_corr.select_dtypes(include=['number']).corr()
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', linewidths=0.5, ax=ax)
+    ax.set_title('🔗 Full Correlation Matrix with Time-based Features')
+    st.pyplot(fig)
+
+# ➤ Default message
+elif plot_env_option == "Select an option":
+    st.info("ℹ️ Please select an environmental insight view.")
+
