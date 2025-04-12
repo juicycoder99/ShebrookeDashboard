@@ -20,59 +20,112 @@ st.markdown("""
 # ✅ Cached loader + preprocessor
 @st.cache_data
 def load_and_preprocess():
-    import gdown
+    import os
+    import requests
+    import pandas as pd
 
-    file_id_1 = "1dL3siMY6KaX1z0f6C5GVgTlJ06b7_Wru"
-    file_id_2 = "1CHO_ToDIw7EET0TfAb1xOV4VynIYPrh8"
-    url1 = f"https://drive.google.com/uc?id={file_id_1}"
-    url2 = f"https://drive.google.com/uc?id={file_id_2}"
+    def download_from_drive(file_id, destination):
+        # Handles download of large files with confirmation tokens
+        URL = "https://docs.google.com/uc?export=download"
 
-    gdown.download(id=file_id_1, output='fixed.csv', quiet=True)
-    gdown.download(id=file_id_2, output='anomalies.csv', quiet=True)
+        session = requests.Session()
+        response = session.get(URL, params={'id': file_id}, stream=True)
+        token = get_confirm_token(response)
 
+        if token:
+            params = {'id': file_id, 'confirm': token}
+            response = session.get(URL, params=params, stream=True)
 
-    df = pd.read_csv('fixed.csv', on_bad_lines='skip')
-    data2 = pd.read_csv('anomalies.csv', on_bad_lines='skip')
+        save_response_content(response, destination)
 
+    def get_confirm_token(response):
+        for key, value in response.cookies.items():
+            if key.startswith('download_warning'):
+                return value
+        return None
+
+    def save_response_content(response, destination):
+        CHUNK_SIZE = 32768
+        with open(destination, "wb") as f:
+            for chunk in response.iter_content(CHUNK_SIZE):
+                if chunk:  # filter out keep-alive chunks
+                    f.write(chunk)
+
+    # ✅ Define file IDs and names
+    files = {
+        "fixed.csv": "1dL3siMY6KaX1z0f6C5GVgTlJ06b7_Wru",
+        "anomalies.csv": "1CHO_ToDIw7EET0TfAb1xOV4VynIYPrh8"
+    }
+
+    # ✅ Download files
+    for name, fid in files.items():
+        if not os.path.exists(name):  # skip re-download if already exists
+            download_from_drive(fid, name)
+
+    # ✅ Load files
+    try:
+        df = pd.read_csv("fixed.csv", on_bad_lines='skip')
+        data2 = pd.read_csv("anomalies.csv", on_bad_lines='skip')
+    except Exception as e:
+        st.error(f"❌ Error reading CSVs: {e}")
+        return pd.DataFrame(), pd.DataFrame()
+
+    # ✅ Combine datetime
     if 'Date' in df.columns and 'Time' in df.columns:
         df['Datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'], errors='coerce')
         df.drop(columns=['Date', 'Time'], inplace=True)
 
-    if 'Date' in data2.columns and 'Time' in data2.columns:
-        data2['Datetime'] = pd.to_datetime(data2['Date'] + ' ' + data2['Time'], errors='coerce')
-        data2.drop(columns=['Date', 'Time'], inplace=True)
-
-    df.set_index('Datetime', inplace=True)
-    data2.set_index('Datetime', inplace=True)
-
-    if 'Gas_Level' in df.columns:
-        df['Gas_Level'] = df['Gas_Level'].astype('category').cat.codes
-    if 'Gas_Level' in data2.columns:
-        data2['Gas_Level'] = data2['Gas_Level'].astype('category').cat.codes
-
-    df.dropna(inplace=True)
-    data2.dropna(inplace=True)
+    # ✅ Encode and clean
+    for d in [df, data2]:
+        if 'Gas_Level' in d.columns:
+            d['Gas_Level'] = d['Gas_Level'].astype('category').cat.codes
+        d.dropna(inplace=True)
 
     return df, data2
 
-# ✅ Call the function
+
+
+
+
+
+# ✅ Load the data once
 df, data2 = load_and_preprocess()
 
 
-    
+st.sidebar.success(f"Normal File Shape: {df.shape}")
+st.sidebar.success(f"Anomaly File Shape: {data2.shape}")
 
 
-
-# Sidebar option to select dataset
-from datetime import datetime
+# 🕒 Sidebar clock
 st.sidebar.markdown(f" **Current Time:** {datetime.now().strftime('%I:%M:%S %p')}")
 
-
-dataset_choice = st.sidebar.radio("🗂 Select Dataset:", ["Normal Readings", "Anomalies"])
-
-# Select the appropriate dataset
-df, data2 = load_and_preprocess()
+# 📦 Dataset selector
+dataset_choice = st.sidebar.radio("📁 Select Dataset:", ["Normal Readings", "Anomalies"])
 data = df if dataset_choice == "Normal Readings" else data2
+
+
+st.sidebar.markdown("## 🧪 Debug Info")
+
+# Check file sizes
+import os
+st.sidebar.write("📦 Normal file size (MB):", round(os.path.getsize("sherbrooke_fixed_sensor_readings.csv") / 1e6, 2))
+st.sidebar.write("📦 Anomalies file size (MB):", round(os.path.getsize("sherbrooke_sensor_readings_with_anomalies.csv") / 1e6, 2))
+
+# Preview top lines to confirm it's real CSV
+try:
+    st.sidebar.code(open("sherbrooke_fixed_sensor_readings.csv", "r").readlines()[0:5])
+except Exception as e:
+    st.sidebar.error(f"Normal CSV Read Error: {e}")
+
+try:
+    st.sidebar.code(open("sherbrooke_sensor_readings_with_anomalies.csv", "r").readlines()[0:5])
+except Exception as e:
+    st.sidebar.error(f"Anomalies CSV Read Error: {e}")
+
+
+
+
+# Sidebar info block
 
 with st.sidebar.expander("📄 Dashboard Info", expanded=False):
     st.markdown("""
@@ -174,13 +227,22 @@ st.markdown("## 🌡️ Real-Time Sensor Overview")
 
 # Initialize with a sample row (only once)
 if 'random_row' not in st.session_state:
-    st.session_state.random_row = data.sample(1).iloc[0]
-    st.session_state.last_update = datetime.datetime.now()
+    if not data.empty:
+        st.session_state.random_row = data.sample(1).iloc[0]
+        st.session_state.last_update = datetime.now()
+    else:
+        st.warning("⚠️ No data available to sample.")
+        st.stop()
 
 # Manual Refresh Button
 if st.button("🔁 Refresh Sensor Data"):
-    st.session_state.random_row = data.sample(1).iloc[0]
-    st.session_state.last_update = datetime.datetime.now()
+    if not data.empty:
+        st.session_state.random_row = data.sample(1).iloc[0]
+        st.session_state.last_update = datetime.now()
+    else:
+        st.warning("⚠️ No data available to refresh.")
+        st.stop()
+
 
 # Display last update timestamp
 if 'last_update' in st.session_state:
