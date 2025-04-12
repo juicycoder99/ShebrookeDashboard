@@ -1,11 +1,8 @@
 import streamlit as st
 import pandas as pd
-import os
 import matplotlib.pyplot as plt
 import seaborn as sns
-import datetime
 from datetime import datetime, timedelta
-import gdown
 
 # Set Streamlit page configuration 
 st.set_page_config(page_title="Temperature, Humidity, Moisture & Gas Dashboard", layout="wide")
@@ -20,62 +17,23 @@ st.markdown("""
 # ✅ Cached loader + preprocessor
 @st.cache_data
 def load_and_preprocess():
-    import os
-    import requests
-    import pandas as pd
+    # ✅ Dropbox direct download links
+    url1 = "https://dl.dropboxusercontent.com/scl/fi/zaf92qddhz0wkiqjxwv0m/sherbrooke_fixed_sensor_readings.csv?rlkey=ftple7zemyrzols883zog52dd&st=2hsn3agk"
+    url2 = "https://dl.dropboxusercontent.com/scl/fi/t1s5iw2a9yufwqc6tqae4/sherbrooke_sensor_readings_with_anomalies.csv?rlkey=7t9f3ami2dfox2tr39z4ziqrv&st=ujm9rrse"
 
-    def download_from_drive(file_id, destination):
-        # Handles download of large files with confirmation tokens
-        URL = "https://docs.google.com/uc?export=download"
-
-        session = requests.Session()
-        response = session.get(URL, params={'id': file_id}, stream=True)
-        token = get_confirm_token(response)
-
-        if token:
-            params = {'id': file_id, 'confirm': token}
-            response = session.get(URL, params=params, stream=True)
-
-        save_response_content(response, destination)
-
-    def get_confirm_token(response):
-        for key, value in response.cookies.items():
-            if key.startswith('download_warning'):
-                return value
-        return None
-
-    def save_response_content(response, destination):
-        CHUNK_SIZE = 32768
-        with open(destination, "wb") as f:
-            for chunk in response.iter_content(CHUNK_SIZE):
-                if chunk:  # filter out keep-alive chunks
-                    f.write(chunk)
-
-    # ✅ Define file IDs and names
-    files = {
-        "fixed.csv": "1dL3siMY6KaX1z0f6C5GVgTlJ06b7_Wru",
-        "anomalies.csv": "1CHO_ToDIw7EET0TfAb1xOV4VynIYPrh8"
-    }
-
-    # ✅ Download files
-    for name, fid in files.items():
-        if not os.path.exists(name):  # skip re-download if already exists
-            download_from_drive(fid, name)
-
-    # ✅ Load files
     try:
-        df = pd.read_csv("fixed.csv", on_bad_lines='skip')
-        data2 = pd.read_csv("anomalies.csv", on_bad_lines='skip')
+        df = pd.read_csv(url1, on_bad_lines='skip')
+        data2 = pd.read_csv(url2, on_bad_lines='skip')
     except Exception as e:
-        st.error(f"❌ Error reading CSVs: {e}")
+        st.error(f"❌ Error loading datasets: {e}")
         return pd.DataFrame(), pd.DataFrame()
 
-    # ✅ Combine datetime
+    # ✅ Combine Date + Time into single datetime column
     if 'Date' in df.columns and 'Time' in df.columns:
         df['Datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'], errors='coerce')
         df.drop(columns=['Date', 'Time'], inplace=True)
 
-    # ✅ Encode and clean
+    # ✅ Encode Gas_Level if present and drop missing
     for d in [df, data2]:
         if 'Gas_Level' in d.columns:
             d['Gas_Level'] = d['Gas_Level'].astype('category').cat.codes
@@ -83,13 +41,9 @@ def load_and_preprocess():
 
     return df, data2
 
-
-
-
-
-
 # ✅ Load the data once
 df, data2 = load_and_preprocess()
+
 
 
 st.sidebar.success(f"Normal File Shape: {df.shape}")
