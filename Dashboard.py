@@ -71,6 +71,9 @@ df, data2 = download_and_preprocess()
 # 🕒 Show current time
 st.sidebar.markdown(f" **Current Time:** {datetime.now().strftime('%I:%M:%S %p')}")
 
+# Add space between clock and dataset selector
+st.sidebar.markdown("")
+
 # 📁 Dataset selector
 st.sidebar.markdown("📂 **Select Dataset:**")
 dataset_choice = st.sidebar.radio(label="", options=["Normal Readings", "Anomalies"], label_visibility="collapsed")
