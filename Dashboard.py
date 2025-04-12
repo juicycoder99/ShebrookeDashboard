@@ -72,8 +72,9 @@ df, data2 = download_and_preprocess()
 st.sidebar.markdown(f" **Current Time:** {datetime.now().strftime('%I:%M:%S %p')}")
 
 # 📁 Dataset selector
-st.sidebar.subheader("📂 Select Dataset:")
-dataset_choice = st.sidebar.radio("", ["Normal Readings", "Anomalies"])
+st.sidebar.markdown("📂 **Select Dataset:**")
+dataset_choice = st.sidebar.radio(label="", options=["Normal Readings", "Anomalies"], label_visibility="collapsed")
+
 
 # Dynamically assign selected dataset to `data`
 data = df if dataset_choice == "Normal Readings" else data2
