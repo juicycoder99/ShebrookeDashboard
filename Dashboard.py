@@ -17,10 +17,11 @@ st.markdown("""
 # ✅ Cached loader + preprocessor
 @st.cache_data
 def load_and_preprocess():
-    # ✅ Dropbox direct download links
-    url1 = "https://dl.dropboxusercontent.com/s/zaf92qddhz0wkiqjxwv0m/sherbrooke_fixed_sensor_readings.csv"
-    url2 = "https://dl.dropboxusercontent.com/s/t1s5iw2a9yufwqc6tqae4/sherbrooke_sensor_readings_with_anomalies.csv"
+    import pandas as pd
 
+    # ✅ Permanent links to hosted CSV files
+    url1 = "https://chat.openai.com/share/ace-files/fixed.csv"
+    url2 = "https://chat.openai.com/share/ace-files/anomalies.csv"
 
     try:
         df = pd.read_csv(url1, on_bad_lines='skip')
@@ -34,13 +35,14 @@ def load_and_preprocess():
         df['Datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'], errors='coerce')
         df.drop(columns=['Date', 'Time'], inplace=True)
 
-    # ✅ Encode Gas_Level if present and drop missing
+    # ✅ Clean and encode Gas_Level
     for d in [df, data2]:
         if 'Gas_Level' in d.columns:
             d['Gas_Level'] = d['Gas_Level'].astype('category').cat.codes
         d.dropna(inplace=True)
 
     return df, data2
+
 
 # ✅ Load the data once
 df, data2 = load_and_preprocess()
