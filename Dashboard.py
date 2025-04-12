@@ -2,6 +2,10 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
+import matplotlib.pyplot as plt
+import seaborn as sns
+import kaggle
+
 
 # ---------------------------------------------
 # 🔧 Streamlit Config & UI
@@ -25,9 +29,6 @@ os.environ['KAGGLE_KEY'] = 'your_kaggle_key_here'  # Replace with your actual Ka
 # ---------------------------------------------
 @st.cache_data
 def download_and_preprocess():
-    import kaggle
-    import os
-    import pandas as pd
 
     try:
         # ✅ Download dataset from Kaggle
