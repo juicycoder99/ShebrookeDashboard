@@ -1,4 +1,9 @@
 import altair as alt
+import streamlit as st
+import pandas as pd  # 👈 Make sure this is included
+import altair as alt
+import os
+
 
 # 🔁 Reload full dataset (not just .head())
 df_plot = pd.read_csv('data/sherbrooke_fixed_sensor_readings.csv')
