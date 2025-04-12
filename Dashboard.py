@@ -1,17 +1,32 @@
 import streamlit as st
 import pandas as pd
+import gdown
 
-st.set_page_config(page_title="Test Dropbox Read", layout="centered")
+st.set_page_config(page_title="Dataset Preview", layout="centered")
 
-st.title("📦 Preview Dataset from Dropbox")
+st.title("📄 Preview Datasets from Google Drive")
 
-# ✅ Raw direct link (update if needed)
-dropbox_url = "https://dl.dropboxusercontent.com/s/zaf92qddhz0wkiqjxwv0m/sherbrooke_fixed_sensor_readings.csv"
+# Google Drive File IDs
+file_id_1 = "1dL3siMY6KaX1z0f6C5GVgTlJ06b7_Wru"  # fixed dataset
+file_id_2 = "1CHO_ToDIw7EET0TfAb1xOV4VynIYPrh8"  # anomalies dataset
 
+# Construct download URLs
+url1 = f"https://drive.google.com/uc?id={file_id_1}"
+url2 = f"https://drive.google.com/uc?id={file_id_2}"
+
+# Download and load just the first few rows
 try:
-    df = pd.read_csv(dropbox_url, on_bad_lines='skip')
-    st.success("Dataset loaded successfully ✅")
-    st.write("### Preview of the dataset:")
-    st.dataframe(df.head())  # only show first few rows
+    gdown.download(url1, "fixed.csv", quiet=True)
+    gdown.download(url2, "anomalies.csv", quiet=True)
+
+    df = pd.read_csv("fixed.csv", nrows=5)
+    data2 = pd.read_csv("anomalies.csv", nrows=5)
+
+    st.subheader("✅ Fixed Dataset Preview")
+    st.dataframe(df)
+
+    st.subheader("✅ Anomalies Dataset Preview")
+    st.dataframe(data2)
+
 except Exception as e:
-    st.error(f"❌ Failed to load dataset: {e}")
+    st.error(f"Failed to load datasets: {e}")
