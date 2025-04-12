@@ -299,8 +299,8 @@ elif plot_option == "Day vs Night Gas Levels":
         tooltip=["TimeOfDay", "Gas"]
     ).properties(
         title="Gas Levels: Day vs Night",
-        width=500,
-        height=400
+        width=400,
+        height=600
     )
 
     st.altair_chart(chart, use_container_width=True)
