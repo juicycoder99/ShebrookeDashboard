@@ -158,3 +158,49 @@ if show_summary:
     # Display styled summary
     st.dataframe(summary.style.format("{:.2f}"))
 
+
+
+# ---------------------------- CSV Export Section ----------------------------
+
+# 🔁 Convert selected data (normal or anomalies) to CSV
+csv = data.to_csv(index=False).encode('utf-8')
+
+# 📥 Download button inside expandable section
+with st.sidebar.expander("📥 Download Reports", expanded=False):
+    st.markdown("Export the currently selected dataset as a downloadable CSV file.")
+    st.download_button(
+        label="⬇️ Download CSV Report",
+        data=csv,
+        file_name='sensor_data_report.csv',
+        mime='text/csv',
+        use_container_width=True
+    )
+
+
+# ----------------------- Real-Time Sensor Overview Section -----------------------
+
+st.markdown("## 🌡️ Real-Time Sensor Overview")
+
+# ✅ Initialize random sensor sample row (only if not already done)
+if 'random_row' not in st.session_state or data.empty:
+    if not data.empty:
+        st.session_state.random_row = data.sample(1).iloc[0]
+        st.session_state.last_update = datetime.now()
+    else:
+        st.warning("⚠️ Dataset is empty. Cannot display sensor snapshot.")
+        st.stop()
+
+# 🔁 Manual refresh button for simulating real-time sensor check
+if st.button("🔁 Refresh Sensor Data"):
+    if not data.empty:
+        st.session_state.random_row = data.sample(1).iloc[0]
+        st.session_state.last_update = datetime.now()
+    else:
+        st.warning("⚠️ No data available to refresh.")
+        st.stop()
+
+# 🕒 Show last updated timestamp
+if 'last_update' in st.session_state:
+    st.caption(f"🕒 Last updated: {st.session_state.last_update.strftime('%Y-%m-%d %I:%M:%S %p')}")
+
+
