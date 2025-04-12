@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
+import altair as alt
 import kaggle
 
 
@@ -308,3 +309,80 @@ elif plot_option == "Sensor-wise Comparison":
 elif plot_option == "Select an option":
     st.info("ℹ️ Please select a gas trend view to begin visualization.")
 
+
+
+
+
+# -------------------- Time Series Monitoring Section --------------------
+st.markdown("## 📉 Time Series Monitoring with Summary Stats")
+
+# Step 1: Select variable
+variable_to_plot = st.selectbox("📌 Select a variable to monitor over time:", 
+                                ["Temperature", "Humidity", "Moisture", "Gas"])
+
+# Step 2: Choose view mode
+view_mode = st.radio("⏱️ View data by:", ["Daily", "Weekly", "Monthly", "Yearly"], horizontal=True)
+
+# Step 3: Filter data based on selection
+if view_mode == "Daily":
+    selected_date = st.date_input("📅 Select a day", value=datetime.datetime(2023, 1, 1))
+    filtered = data[data.index.date == selected_date]
+    title = f"{variable_to_plot} - {selected_date.strftime('%B %d, %Y')} (Daily View)"
+    resample_freq = "H"
+
+elif view_mode == "Weekly":
+    selected_week = st.date_input("📅 Select any date in the week", value=datetime.datetime(2023, 1, 1))
+    start_of_week = selected_week - timedelta(days=selected_week.weekday())
+    end_of_week = start_of_week + timedelta(days=6)
+    filtered = data[(data.index.date >= start_of_week) & (data.index.date <= end_of_week)]
+    title = f"{variable_to_plot} - Week of {start_of_week.strftime('%b %d')} (Weekly View)"
+    resample_freq = "6H"
+
+elif view_mode == "Monthly":
+    month_map = {
+        "January": 1, "February": 2, "March": 3, "April": 4,
+        "May": 5, "June": 6, "July": 7, "August": 8,
+        "September": 9, "October": 10, "November": 11, "December": 12
+    }
+    selected_month = st.selectbox("📆 Select month:", list(month_map.keys()))
+    month_num = month_map[selected_month]
+    filtered = data[data.index.month == month_num]
+    title = f"{variable_to_plot} - {selected_month} (Monthly View)"
+    resample_freq = "D"
+
+elif view_mode == "Yearly":
+    selected_year = st.selectbox("📅 Select year:", sorted(data.index.year.unique(), reverse=True))
+    filtered = data[data.index.year == selected_year]
+    title = f"{variable_to_plot} - {selected_year} (Yearly View)"
+    resample_freq = "M"
+
+# Step 4: Plot + Summary
+if not filtered.empty:
+    ts_data = filtered[[variable_to_plot]].resample(resample_freq).mean().dropna().reset_index()
+
+    # Altair Chart
+    line_chart = alt.Chart(ts_data).mark_line(interpolate='monotone').encode(
+        x=alt.X("Datetime:T", title="Time"),
+        y=alt.Y(f"{variable_to_plot}:Q", title=variable_to_plot),
+        tooltip=["Datetime", variable_to_plot]
+    ).properties(
+        title=title,
+        width=800,
+        height=400
+    ).interactive()
+
+    st.altair_chart(line_chart, use_container_width=True)
+
+    # Summary Stats
+    min_val = ts_data[variable_to_plot].min()
+    max_val = ts_data[variable_to_plot].max()
+    avg_val = ts_data[variable_to_plot].mean()
+
+    with st.container():
+        col1, col2, col3, _ = st.columns([1, 1, 1, 6])
+        col1.markdown(f"<div style='text-align:center;'><span style='color:#FF5733; font-weight:bold;'>min</span><br>{round(min_val, 2)}</div>", unsafe_allow_html=True)
+        col2.markdown(f"<div style='text-align:center;'><span style='color:#FF5733; font-weight:bold;'>max</span><br>{round(max_val, 2)}</div>", unsafe_allow_html=True)
+        col3.markdown(f"<div style='text-align:center;'><span style='color:#FF5733; font-weight:bold;'>avg</span><br>{round(avg_val, 2)}</div>", unsafe_allow_html=True)
+
+else:
+    st.warning("⚠️ No data found for the selected time range.")
