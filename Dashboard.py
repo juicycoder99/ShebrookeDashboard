@@ -21,52 +21,49 @@ st.markdown("""
 @st.cache_data
 def load_and_preprocess():
     import gdown
+    import os
 
-    # Google Drive file IDs
     file_id_1 = "1dL3siMY6KaX1z0f6C5GVgTlJ06b7_Wru"  # fixed sensor
     file_id_2 = "1CHO_ToDIw7EET0TfAb1xOV4VynIYPrh8"  # anomalies
 
-    # Construct download URLs
     url1 = f"https://drive.google.com/uc?id={file_id_1}"
     url2 = f"https://drive.google.com/uc?id={file_id_2}"
 
-    # File names to save as
     file1 = "fixed.csv"
     file2 = "anomalies.csv"
 
-    # Download CSV files with overwrite=True and error visibility
     try:
-        gdown.download(url1, file1, quiet=False, fuzzy=True)
-        gdown.download(url2, file2, quiet=False, fuzzy=True)
+        gdown.download(url1, file1, quiet=False, fuzzy=True, use_cookies=True)
+        gdown.download(url2, file2, quiet=False, fuzzy=True, use_cookies=True)
     except Exception as e:
-        st.error(f"❌ Failed to download dataset(s): {e}")
+        st.error(f"❌ Failed to download datasets from Google Drive: {e}")
         return pd.DataFrame(), pd.DataFrame()
 
-    # Check if files actually exist after download
     if not os.path.exists(file1) or not os.path.exists(file2):
         st.error("❌ One or both datasets could not be found after download.")
         return pd.DataFrame(), pd.DataFrame()
 
-    # Load datasets
-    df = pd.read_csv(file1, on_bad_lines='skip')
-    data2 = pd.read_csv(file2, on_bad_lines='skip')
+    try:
+        df = pd.read_csv(file1, on_bad_lines='skip')
+        data2 = pd.read_csv(file2, on_bad_lines='skip')
+    except Exception as e:
+        st.error(f"❌ Error reading CSV files: {e}")
+        return pd.DataFrame(), pd.DataFrame()
 
-    # Merge Date + Time columns
     if 'Date' in df.columns and 'Time' in df.columns:
         df['Datetime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'], errors='coerce')
         df.drop(columns=['Date', 'Time'], inplace=True)
 
-    # Encode Gas_Level if present
     if 'Gas_Level' in df.columns:
         df['Gas_Level'] = df['Gas_Level'].astype('category').cat.codes
     if 'Gas_Level' in data2.columns:
         data2['Gas_Level'] = data2['Gas_Level'].astype('category').cat.codes
 
-    # Remove any rows with NaNs after preprocessing
     df.dropna(inplace=True)
     data2.dropna(inplace=True)
 
     return df, data2
+
 
 
 
