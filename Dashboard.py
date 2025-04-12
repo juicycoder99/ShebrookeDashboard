@@ -81,3 +81,80 @@ dataset_choice = st.sidebar.radio(label="", options=["Normal Readings", "Reading
 
 # Dynamically assign selected dataset to `data`
 data = df if dataset_choice == "Normal Readings" else data2
+
+
+
+# ---------------------------------------
+# 🧾 Sidebar Expandable Dashboard Info
+# ---------------------------------------
+with st.sidebar.expander("📄 Dashboard Info", expanded=False):
+    st.markdown("""
+    ### ℹ️ About This Dashboard
+
+    This interactive dashboard is designed to:
+    - Monitor real-time environmental sensor data  
+    - Analyze gas levels across different timeframes  
+    - Visualize temperature, humidity, moisture, and gas trends  
+    - Explore correlations between gas and other variables  
+    - Compare gas levels across sensor locations  
+    - Detect and observe anomalies  
+    - Drill into selected timeframes for insights
+
+    ---
+
+    ### 📊 Dataset Info  
+    This is **synthetic** data — generated to simulate realistic environmental behavior.  
+    Intended solely for **research and analysis** purposes.
+
+    ---
+
+    ### 🛠️ Technologies Used
+    - Python, Pandas, NumPy  
+    - Matplotlib, Seaborn  
+    - Streamlit (UI framework)
+
+    ---
+
+    ### 👥 Credits
+    Developed by: *Jibril Hussaini*  
+    Supervised by: *Rachid Hedjam*  
+    Institution: *Bishop’s University*  
+    Year: 2025
+
+    ---
+
+    ### 📤 Future Add-ons
+    - PDF/Excel reports  
+    - Upload sensor logs  
+    - AI-powered prediction  
+    - Real-time map-based view
+    """)
+
+
+
+# ---------------------------------------
+# 📈 Optional Summary Statistics Section
+# ---------------------------------------
+show_summary = st.sidebar.checkbox("📊 Show Statistical Summary")
+
+if show_summary:
+    st.markdown("## 📌 Statistical Summary")
+
+    # Compute and format descriptive statistics
+    summary = data[["Temperature", "Humidity", "Moisture", "Gas"]].describe().T.round(2)
+
+    # Rename columns for clarity
+    summary.rename(columns={
+        "count": "Count",
+        "mean": "Mean",
+        "std": "Std Dev",
+        "min": "Min",
+        "25%": "25%",
+        "50%": "Median",
+        "75%": "75%",
+        "max": "Max"
+    }, inplace=True)
+
+    # Display styled summary
+    st.dataframe(summary.style.format("{:.2f}"))
+
