@@ -439,16 +439,18 @@ plot_env_option = st.selectbox("📊 Select Environmental View Type:",
 if plot_env_option == "Monthly Trends of All Variables":
     # Step 1: Group and reset index
     monthly_avg = data.groupby(data.index.month)[["Temperature", "Humidity", "Moisture", "Gas"]].mean()
-    monthly_avg.index.name = "MonthNum"  # Give index a name for clarity
+    monthly_avg.index.name = "MonthNum"
     monthly_avg = monthly_avg.reset_index()
-
-    # Step 2: Add proper month labels
     monthly_avg["Month"] = monthly_avg["MonthNum"].apply(lambda x: datetime(2023, x, 1).strftime("%b"))
-
-    # Step 3: Melt the dataframe for Altair
-    melted = monthly_avg.melt(id_vars=["Month"], var_name="Variable", value_name="Average")
-
-    # Step 4: Plot using Altair
+    
+    # ✅ Only melt actual environmental variables
+    melted = monthly_avg.melt(
+        id_vars=["Month"], 
+        value_vars=["Temperature", "Humidity", "Moisture", "Gas"],
+        var_name="Variable", 
+        value_name="Average"
+    )
+    
     chart = alt.Chart(melted).mark_line(point=True).encode(
         x=alt.X("Month:N", sort=["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
                                  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]),
@@ -460,8 +462,9 @@ if plot_env_option == "Monthly Trends of All Variables":
         width=800,
         height=400
     ).interactive()
-
+    
     st.altair_chart(chart, use_container_width=True)
+
 
 
 # ➤ 2. Seasonal Trends of Environmental Variables
