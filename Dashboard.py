@@ -18,8 +18,9 @@ st.markdown("""
 @st.cache_data
 def load_and_preprocess():
     # ✅ Dropbox direct download links
-    url1 = "https://dl.dropboxusercontent.com/scl/fi/zaf92qddhz0wkiqjxwv0m/sherbrooke_fixed_sensor_readings.csv?rlkey=ftple7zemyrzols883zog52dd&st=2hsn3agk"
-    url2 = "https://dl.dropboxusercontent.com/scl/fi/t1s5iw2a9yufwqc6tqae4/sherbrooke_sensor_readings_with_anomalies.csv?rlkey=7t9f3ami2dfox2tr39z4ziqrv&st=ujm9rrse"
+    url1 = "https://dl.dropboxusercontent.com/s/zaf92qddhz0wkiqjxwv0m/sherbrooke_fixed_sensor_readings.csv"
+    url2 = "https://dl.dropboxusercontent.com/s/t1s5iw2a9yufwqc6tqae4/sherbrooke_sensor_readings_with_anomalies.csv"
+
 
     try:
         df = pd.read_csv(url1, on_bad_lines='skip')
