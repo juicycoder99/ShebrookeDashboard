@@ -57,15 +57,15 @@ def load_and_preprocess():
         if 'Gas_Level' in d.columns:
             d['Gas_Level'] = d['Gas_Level'].astype('category').cat.codes
 
-        # Drop nulls
-        d.dropna(inplace=True)
+try:
+    # Drop nulls
+    d.dropna(inplace=True)
 
     return df, data2
 
-
-    except Exception as e:
-        st.error(f"❌ Error loading datasets: {e}")
-        return pd.DataFrame(), pd.DataFrame()
+except Exception as e:
+    st.error(f"❌ Error loading datasets: {e}")
+    return pd.DataFrame(), pd.DataFrame()
 
 # ---------------------------------------------
 # 🚀 Load the datasets
