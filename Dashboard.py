@@ -382,10 +382,24 @@ if not filtered.empty:
 
     st.altair_chart(alt_chart, use_container_width=True)
 
-    # 📊 Summary Metrics
-    col1, col2, col3, _ = st.columns([1, 1, 1, 6])
-    col1.metric("Min", f"{round(min_val, 2)}")
-    col2.metric("Max", f"{round(max_val, 2)}")
-    col3.metric("Average", f"{round(avg_val, 2)}")
+    # Centered summary stats (min, max, average) in red
+    with st.container():
+        st.markdown("""
+        <div style='text-align: center; display: flex; justify-content: center; gap: 60px; margin-top: 30px;'>
+            <div>
+                <div style='color: red; font-weight: bold;'>Min</div>
+                <div style='font-size: 20px; color: red;'>""" + f"{round(min_val, 2)}" + """</div>
+            </div>
+            <div>
+                <div style='color: red; font-weight: bold;'>Max</div>
+                <div style='font-size: 20px; color: red;'>""" + f"{round(max_val, 2)}" + """</div>
+            </div>
+            <div>
+                <div style='color: red; font-weight: bold;'>Average</div>
+                <div style='font-size: 20px; color: red;'>""" + f"{round(avg_val, 2)}" + """</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
 else:
     st.warning("⚠️ No data found for the selected time range.")
