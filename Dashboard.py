@@ -317,9 +317,12 @@ elif plot_option == "Select an option":
 # -------------------- Time Series Monitoring Section --------------------
 st.markdown("## 📉 Time Series Monitoring with Summary Stats")
 
-# Step 1: Select variable
-variable_to_plot = st.selectbox("📌 Select a variable to monitor over time:", 
-                                ["Temperature", "Humidity", "Moisture", "Gas"])
+# Step 1: Select variable (default is 'Gas')
+variable_to_plot = st.selectbox(
+    "📌 Select a variable to monitor over time:",
+    ["Temperature", "Humidity", "Moisture", "Gas"],
+    index=3  # 👈 Index 3 corresponds to 'Gas'
+)
 
 # Step 2: Choose view mode
 view_mode = st.radio("⏱️ View data by:", ["Daily", "Weekly", "Monthly", "Yearly"], horizontal=True)
