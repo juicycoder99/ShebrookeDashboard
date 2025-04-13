@@ -279,6 +279,7 @@ elif plot_option == "Monthly Trend":
     chart = alt.Chart(monthly_avg).mark_line(point=True).encode(
         x=alt.X("MonthName:N", sort=list(monthly_avg["MonthName"])),
         y=alt.Y("Gas:Q", title="Average Gas Level"),
+        color=alt.Color("MonthName:N", scale=alt.Scale(scheme="category20")),
         tooltip=["MonthName", "Gas"]
     ).properties(
         title="Monthly Gas Level Trends",
@@ -297,12 +298,14 @@ elif plot_option == "Day vs Night Gas Levels":
     chart = alt.Chart(daynight_avg).mark_bar().encode(
         x=alt.X("TimeOfDay:N", sort=["Day (6AM–6PM)", "Night (6PM–6AM)"]),
         y=alt.Y("Gas:Q", title="Average Gas Level"),
+        color=alt.Color("TimeOfDay:N", scale=alt.Scale(scheme="dark2")),
         tooltip=["TimeOfDay", "Gas"]
     ).properties(
         title="Gas Levels: Day vs Night",
-        width=400,
+        width=300,
         height=600
     )
+
 
     st.altair_chart(chart, use_container_width=True)
 
@@ -314,12 +317,14 @@ elif plot_option == "Sensor-wise Comparison":
     chart = alt.Chart(sensor_avg).mark_bar().encode(
         y=alt.Y("Location:N", sort="-x", title="Sensor Location"),
         x=alt.X("Gas:Q", title="Average Gas Level"),
+        color=alt.Color("Location:N", scale=alt.Scale(scheme="turbo")),
         tooltip=["Location", "Gas"]
     ).properties(
         title=f"Top {top_n} Sensor Locations by Gas Level",
         width=700,
         height=600
     )
+
 
     st.altair_chart(chart, use_container_width=True)
 
