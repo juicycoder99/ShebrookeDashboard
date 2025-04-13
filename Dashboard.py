@@ -1,4 +1,5 @@
 import streamlit as st
+import numpy as np
 import pandas as pd
 import os
 from datetime import datetime
@@ -572,7 +573,13 @@ detector_choice = st.sidebar.radio("🛡️ Select Anomaly Detection Method", ["
 # Slice last 1000 rows to avoid performance issues
 df_recent = df.copy()
 df_recent['Datetime'] = df_recent.index
-df_recent = df_recent.sort_values('Datetime').tail(1000).copy()
+df_recent = df_recent.sort_values('Datetime')
+
+# Safety check: only take last 1000 rows if there are at least that many
+if len(df_recent) > 1000:
+    df_recent = df_recent.tail(1000).copy()
+else:
+    df_recent = df_recent.copy()
 
 # Initialize anomaly column
 df_recent['Anomaly'] = False
