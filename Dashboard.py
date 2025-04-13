@@ -564,16 +564,15 @@ elif plot_env_option == "Select an option":
 
 
 # --------------------- SIDEBAR ANOMALY DETECTOR TOGGLE ---------------------
-# Lets user choose detection method
 detector_choice = st.sidebar.radio("🛡️ Select Anomaly Detection Method", ["IQR", "Z-Score"])
 
-# --------------------- LIMIT DATA FOR PERFORMANCE ---------------------
-# Display only the last 1000 rows for smoother rendering
-df_recent = df.tail(1000).copy()
+# --------------------- OPTIMIZED LATEST DATA SELECTION ---------------------
+# Show only last 1000 rows to keep dashboard responsive
+df_recent = df[['Gas']].tail(1000).copy()
+df_recent['Datetime'] = df.tail(1000).index  # Ensure index is included for plotting
 
-# --------------------- ANOMALY DETECTION FUNCTION ---------------------
-@st.cache_data
-def detect_anomalies(data, method):
+# --------------------- DETECTION LOGIC (NO CACHE FOR SMALL DATA) ---------------------
+def apply_anomaly_detection(data, method):
     data = data.copy()
     data['Anomaly'] = False
 
@@ -584,28 +583,28 @@ def detect_anomalies(data, method):
         data['Anomaly'] = (data['Gas'] < (Q1 - 1.5 * IQR)) | (data['Gas'] > (Q3 + 1.5 * IQR))
 
     elif method == "Z-Score":
-        z_thresh = 3
-        z_scores = (data['Gas'] - data['Gas'].mean()) / data['Gas'].std()
-        data['Anomaly'] = np.abs(z_scores) > z_thresh
+        threshold = 3
+        z = (data['Gas'] - data['Gas'].mean()) / data['Gas'].std()
+        data['Anomaly'] = np.abs(z) > threshold
 
     return data
 
-# --------------------- APPLY DETECTOR ---------------------
-df_detected = detect_anomalies(df_recent, detector_choice)
+df_annotated = apply_anomaly_detection(df_recent, detector_choice)
 
-# ------------------ BASELINE GAS TREND CHART ------------------
-chart = alt.Chart(df_detected.reset_index()).mark_line().encode(
+# --------------------- ALTAR PLOT (STREAMLINED) ---------------------
+import altair as alt
+
+base_chart = alt.Chart(df_annotated).mark_line().encode(
     x='Datetime:T',
     y='Gas',
     tooltip=['Datetime', 'Gas']
 ).properties(
+    title='📈 Gas Monitoring (last 1000)',
     width=800,
-    height=350,
-    title="📈 Real-Time Gas Level Monitoring"
+    height=300
 )
 
-# ------------------ RED ANOMALY DOT MARKERS ------------------
-anomalies = alt.Chart(df_detected[df_detected['Anomaly']].reset_index()).mark_point(
+anomaly_chart = alt.Chart(df_annotated[df_annotated['Anomaly']]).mark_point(
     color='red',
     size=60
 ).encode(
@@ -614,8 +613,6 @@ anomalies = alt.Chart(df_detected[df_detected['Anomaly']].reset_index()).mark_po
     tooltip=['Datetime', 'Gas']
 )
 
-# ------------------ COMBINED CHART ------------------
-st.altair_chart(chart + anomalies, use_container_width=True)
-
+st.altair_chart(base_chart + anomaly_chart, use_container_width=True)
 
 
