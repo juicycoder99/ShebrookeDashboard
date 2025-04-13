@@ -564,64 +564,63 @@ elif plot_env_option == "Select an option":
 
 
 
-# --------------------- SIDEBAR ANOMALY DETECTOR TOGGLE ---------------------
 # ---------------------- SIDEBAR ANOMALY DETECTOR TOGGLE ----------------------
-# Let user select detection method (IQR or Z-Score)
+# Let user select anomaly detection method
 detector_choice = st.sidebar.radio("🛡️ Select Anomaly Detection Method", ["IQR", "Z-Score"])
 
-# ---------------------- WORK ON RECENT DATA ONLY ----------------------
-# Slice last 1000 rows to avoid performance issues
-df_recent = df.copy()
-df_recent = df_recent.sort_index()
+# ---------------------- USE RECENT DATA ONLY ----------------------
+# Sort by datetime index (if not already sorted)
+df_recent = df.sort_index().copy()
 
-
-# Safety check: only take last 1000 rows if there are at least that many
+# Limit to the most recent 1000 rows for performance
 if len(df_recent) > 1000:
-    df_recent = df_recent.tail(1000).copy()
-else:
-    df_recent = df_recent.copy()
+    df_recent = df_recent.tail(1000)
 
 # Initialize anomaly column
 df_recent['Anomaly'] = False
 
-# ---------------------- IQR DETECTION METHOD ----------------------
+# ---------------------- IQR DETECTION ----------------------
 if detector_choice == "IQR":
     Q1 = df_recent['Gas'].quantile(0.25)
     Q3 = df_recent['Gas'].quantile(0.75)
     IQR = Q3 - Q1
 
-    # Mark as anomaly if below Q1 - 1.5*IQR or above Q3 + 1.5*IQR
+    # Flag anomalies outside IQR range
     df_recent['Anomaly'] = (df_recent['Gas'] < (Q1 - 1.5 * IQR)) | (df_recent['Gas'] > (Q3 + 1.5 * IQR))
 
-# ---------------------- Z-SCORE DETECTION METHOD ----------------------
+# ---------------------- Z-SCORE DETECTION ----------------------
 elif detector_choice == "Z-Score":
-    z_thresh = 3  # Change this if needed
+    z_thresh = 3  # Threshold for standard deviation
     z_scores = (df_recent['Gas'] - df_recent['Gas'].mean()) / df_recent['Gas'].std()
     df_recent['Anomaly'] = z_scores.abs() > z_thresh
 
-# ---------------------- PLOT USING ALTAIR ----------------------
-# Base gas line
-base_chart = alt.Chart(df_recent).mark_line().encode(
-    x='Datetime:T',
-    y='Gas',
-    tooltip=['Datetime', 'Gas']
+# ---------------------- ALTair Plotting ----------------------
+# Reset index so 'Datetime' becomes a column
+df_plot = df_recent.reset_index()
+
+# Base line chart for gas values
+base_chart = alt.Chart(df_plot).mark_line().encode(
+    x=alt.X('Datetime:T', title='Time'),
+    y=alt.Y('Gas:Q', title='Gas Level'),
+    tooltip=['Datetime:T', 'Gas:Q']
 ).properties(
     width=800,
     height=350,
     title="📈 Real-Time Gas Level Monitoring with Anomaly Detection"
 )
 
-# Anomaly points
-anomaly_chart = alt.Chart(df_recent[df_recent['Anomaly']]).mark_point(
+# Red triangle markers for detected anomalies
+anomaly_chart = alt.Chart(df_plot[df_plot['Anomaly']]).mark_point(
     color='red',
-    size=60
+    size=80,
+    shape='triangle'
 ).encode(
     x='Datetime:T',
-    y='Gas',
-    tooltip=['Datetime', 'Gas']
+    y='Gas:Q',
+    tooltip=['Datetime:T', 'Gas:Q']
 )
 
-# ---------------------- DISPLAY CHART ----------------------
+# Display combined chart
 st.altair_chart(base_chart + anomaly_chart, use_container_width=True)
 
 
