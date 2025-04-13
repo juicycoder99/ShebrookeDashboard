@@ -572,8 +572,8 @@ detector_choice = st.sidebar.radio("🛡️ Select Anomaly Detection Method", ["
 # ---------------------- WORK ON RECENT DATA ONLY ----------------------
 # Slice last 1000 rows to avoid performance issues
 df_recent = df.copy()
-df_recent['Datetime'] = df_recent.index
-df_recent = df_recent.sort_values('Datetime')
+df_recent = df_recent.sort_index()
+
 
 # Safety check: only take last 1000 rows if there are at least that many
 if len(df_recent) > 1000:
