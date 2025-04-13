@@ -276,16 +276,20 @@ elif plot_option == "Monthly Trend":
     monthly_avg = monthly_df.groupby("Month")["Gas"].mean().reset_index()
     monthly_avg["MonthName"] = monthly_avg["Month"].apply(lambda x: datetime(2023, x, 1).strftime("%b"))
 
-    chart = alt.Chart(monthly_avg).mark_line(point=True).encode(
+    chart = alt.Chart(monthly_avg).mark_line(
+        point=True,
+        strokeDash=[4, 4],  # 👈 This makes the line dotted
+        color="lightblue"
+    ).encode(
         x=alt.X("MonthName:N", sort=list(monthly_avg["MonthName"])),
         y=alt.Y("Gas:Q", title="Average Gas Level"),
-        color=alt.Color("MonthName:N", scale=alt.Scale(scheme="category20")),
         tooltip=["MonthName", "Gas"]
     ).properties(
         title="Monthly Gas Level Trends",
         width=700,
         height=400
     )
+
 
     st.altair_chart(chart, use_container_width=True)
 
