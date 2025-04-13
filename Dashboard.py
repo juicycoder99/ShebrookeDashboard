@@ -624,3 +624,16 @@ anomaly_chart = alt.Chart(df_plot[df_plot['Anomaly']]).mark_point(
 st.altair_chart(base_chart + anomaly_chart, use_container_width=True)
 
 
+# ---------------------- DISPLAY ALERT IF ANOMALIES DETECTED ----------------------
+num_anomalies = df_recent['Anomaly'].sum()
+
+if num_anomalies > 0:
+    st.warning(f"🚨 {num_anomalies} anomalies detected in the latest gas readings.")
+else:
+    st.success("✅ No anomalies detected in the most recent data.")
+
+
+st.altair_chart(base_chart + anomaly_chart, use_container_width=True)
+
+
+
