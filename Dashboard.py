@@ -633,7 +633,6 @@ else:
     st.success("✅ No anomalies detected in the most recent data.")
 
 
-st.altair_chart(base_chart + anomaly_chart, use_container_width=True)
 
 
 
