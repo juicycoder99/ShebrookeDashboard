@@ -561,3 +561,23 @@ elif plot_env_option == "Full Correlation Matrix (All Vars)":
 elif plot_env_option == "Select an option":
     st.info("ℹ️ Please select an environmental insight view.")
 
+
+
+# --------------------In Sidebar --------------------
+detector_choice = st.sidebar.radio("🛡️ Select Anomaly Detection Method", ["IQR", "Z-Score"])
+
+# Compute Anomalies
+df['Anomaly'] = False
+
+if detector_choice == "IQR":
+    Q1 = df['Gas'].quantile(0.25)
+    Q3 = df['Gas'].quantile(0.75)
+    IQR = Q3 - Q1
+    df['Anomaly'] = (df['Gas'] < (Q1 - 1.5 * IQR)) | (df['Gas'] > (Q3 + 1.5 * IQR))
+
+elif detector_choice == "Z-Score":
+    z_thresh = 3
+    z_scores = (df['Gas'] - df['Gas'].mean()) / df['Gas'].std()
+    df['Anomaly'] = np.abs(z_scores) > z_thresh
+
+
