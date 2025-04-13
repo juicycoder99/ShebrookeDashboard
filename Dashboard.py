@@ -259,6 +259,7 @@ if plot_option == "Seasonal Average":
     chart = alt.Chart(seasonal_df).mark_bar().encode(
         x=alt.X("Season:N", sort=season_order),
         y=alt.Y("Gas:Q", title="Average Gas Level"),
+        color=alt.Color("Season:N", scale=alt.Scale(scheme="tableau20")),
         tooltip=["Season", "Gas"]
     ).properties(
         title="Average Gas Levels Across Seasons",
