@@ -583,6 +583,9 @@ if scope_choice == "Recent (1000 rows)" and len(df_scope) > 1000:
 elif scope_choice == "Custom Date Range":
     min_date = df_scope.index.min().date()
     max_date = df_scope.index.max().date()
+    st.sidebar.markdown("### 📅 Custom Date Range")
+    start_date = st.sidebar.date_input("Start Date:", min_value=min_date, max_value=max_date, value=min_date)
+    end_date = st.sidebar.date_input("End Date:", min_value=min_date, max_value=max_date, value=max_date)
     if isinstance(start_date, date) and isinstance(end_date, date):
         df_scope = df_scope[(df_scope.index.date >= start_date) & (df_scope.index.date <= end_date)]
 
@@ -658,6 +661,7 @@ if num_anomalies > 0:
     st.altair_chart(bar, use_container_width=True)
 else:
     st.success("✅ No anomalies detected in the selected data.")
+
 
 
 
