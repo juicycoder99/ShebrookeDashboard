@@ -583,13 +583,9 @@ if scope_choice == "Recent (1000 rows)" and len(df_scope) > 1000:
 elif scope_choice == "Custom Date Range":
     min_date = df_scope.index.min().date()
     max_date = df_scope.index.max().date()
-    st.sidebar.markdown("#### 📆 Custom Date Range")
-    start_date = st.sidebar.date_input("Start Date:", min_date, min_value=min_date, max_value=max_date)
-    end_date = st.sidebar.date_input("End Date:", max_date, min_value=min_date, max_value=max_date)
-
+    start_date, end_date = st.sidebar.date_input("Select Date Range:", [min_date, max_date], min_value=min_date, max_value=max_date)
     if isinstance(start_date, date) and isinstance(end_date, date):
         df_scope = df_scope[(df_scope.index.date >= start_date) & (df_scope.index.date <= end_date)]
-
 
 # Initialize anomaly column
 df_scope['Anomaly'] = False
@@ -620,12 +616,7 @@ base_chart = alt.Chart(df_plot).mark_line().encode(
     title="📈 Gas Levels with Anomaly Detection"
 )
 
-# Limit anomalies shown to 500 for performance
-anomaly_df = df_plot[df_plot['Anomaly']]
-if len(anomaly_df) > 500:
-    anomaly_df = anomaly_df.sample(500, random_state=42)
-
-anomaly_chart = alt.Chart(anomaly_df).mark_point(
+anomaly_chart = alt.Chart(df_plot[df_plot['Anomaly']]).mark_point(
     color='red',
     size=80,
     shape='triangle'
@@ -635,7 +626,6 @@ anomaly_chart = alt.Chart(anomaly_df).mark_point(
     tooltip=['Datetime:T', 'Gas:Q']
 )
 
-
 st.altair_chart(base_chart + anomaly_chart, use_container_width=True)
 
 # ---------------------- ALERT BLOCK ----------------------
@@ -643,6 +633,30 @@ num_anomalies = df_scope['Anomaly'].sum()
 
 if num_anomalies > 0:
     st.warning(f"🚨 {num_anomalies} anomalies detected in selected data scope.")
+
+    # ---------------------- ANOMALY STATS ----------------------
+    st.subheader("📊 Anomaly Summary")
+    st.markdown(f"- **First anomaly:** {df_scope[df_scope['Anomaly']].index.min()}\n"
+                f"- **Last anomaly:** {df_scope[df_scope['Anomaly']].index.max()}\n"
+                f"- **Min Gas Level (anomalies):** {df_scope[df_scope['Anomaly']]['Gas'].min()}\n"
+                f"- **Max Gas Level (anomalies):** {df_scope[df_scope['Anomaly']]['Gas'].max()}\n"
+                f"- **Mean Gas Level (anomalies):** {df_scope[df_scope['Anomaly']]['Gas'].mean():.2f}")
+
+    # Daily anomaly count histogram
+    anomaly_per_day = df_scope[df_scope['Anomaly']].copy()
+    anomaly_per_day['Date'] = anomaly_per_day.index.date
+    count_per_day = anomaly_per_day.groupby('Date').size().reset_index(name='Count')
+
+    bar = alt.Chart(count_per_day).mark_bar().encode(
+        x=alt.X('Date:T', title='Date'),
+        y=alt.Y('Count:Q', title='Anomalies Detected')
+    ).properties(
+        width=600,
+        height=300,
+        title="🗓️ Anomaly Count per Day"
+    )
+
+    st.altair_chart(bar, use_container_width=True)
 else:
     st.success("✅ No anomalies detected in the selected data.")
 
