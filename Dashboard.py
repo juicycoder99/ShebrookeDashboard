@@ -637,7 +637,7 @@ if num_anomalies > 0:
     st.warning(f"🚨 {num_anomalies} anomalies detected in selected data scope.")
 
     # ---------------------- ANOMALY STATS ----------------------
-    st.subheader("📊 Anomaly Summary")
+    st.subheader("Anomaly Summary")
     st.markdown(f"- **First anomaly:** {df_scope[df_scope['Anomaly']].index.min()}\n"
                 f"- **Last anomaly:** {df_scope[df_scope['Anomaly']].index.max()}\n"
                 f"- **Min Gas Level (anomalies):** {df_scope[df_scope['Anomaly']]['Gas'].min()}\n"
@@ -655,7 +655,7 @@ if num_anomalies > 0:
     ).properties(
         width=600,
         height=300,
-        title="🗓️ Anomaly Count per Day"
+        title="Anomaly Count per Day"
     )
 
     st.altair_chart(bar, use_container_width=True)
