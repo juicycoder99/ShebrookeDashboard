@@ -620,7 +620,12 @@ base_chart = alt.Chart(df_plot).mark_line().encode(
     title="📈 Gas Levels with Anomaly Detection"
 )
 
-anomaly_chart = alt.Chart(df_plot[df_plot['Anomaly']]).mark_point(
+# Limit anomalies shown to 500 for performance
+anomaly_df = df_plot[df_plot['Anomaly']]
+if len(anomaly_df) > 500:
+    anomaly_df = anomaly_df.sample(500, random_state=42)
+
+anomaly_chart = alt.Chart(anomaly_df).mark_point(
     color='red',
     size=80,
     shape='triangle'
@@ -629,6 +634,7 @@ anomaly_chart = alt.Chart(df_plot[df_plot['Anomaly']]).mark_point(
     y='Gas:Q',
     tooltip=['Datetime:T', 'Gas:Q']
 )
+
 
 st.altair_chart(base_chart + anomaly_chart, use_container_width=True)
 
