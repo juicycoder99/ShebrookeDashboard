@@ -583,9 +583,13 @@ if scope_choice == "Recent (1000 rows)" and len(df_scope) > 1000:
 elif scope_choice == "Custom Date Range":
     min_date = df_scope.index.min().date()
     max_date = df_scope.index.max().date()
-    start_date, end_date = st.sidebar.date_input("Select Date Range:", [min_date, max_date], min_value=min_date, max_value=max_date)
+    st.sidebar.markdown("#### 📆 Custom Date Range")
+    start_date = st.sidebar.date_input("Start Date:", min_date, min_value=min_date, max_value=max_date)
+    end_date = st.sidebar.date_input("End Date:", max_date, min_value=min_date, max_value=max_date)
+
     if isinstance(start_date, date) and isinstance(end_date, date):
         df_scope = df_scope[(df_scope.index.date >= start_date) & (df_scope.index.date <= end_date)]
+
 
 # Initialize anomaly column
 df_scope['Anomaly'] = False
