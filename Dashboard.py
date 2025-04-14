@@ -26,8 +26,8 @@ st.markdown("""
 # ---------------------------------------------
 # 🔐 Set Kaggle credentials securely
 # ---------------------------------------------
-os.environ['KAGGLE_USERNAME'] = 'jibrilhussaini'
-os.environ['KAGGLE_KEY'] = 'your_kaggle_key_here'  # Replace with your actual Kaggle key
+os.environ['KAGGLE_USERNAME'] = st.secrets["KAGGLE_USERNAME"]
+os.environ['KAGGLE_KEY'] = st.secrets["KAGGLE_KEY"]
 
 # ---------------------------------------------
 # 📦 Download and Preprocess Data
