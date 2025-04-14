@@ -583,7 +583,6 @@ if scope_choice == "Recent (1000 rows)" and len(df_scope) > 1000:
 elif scope_choice == "Custom Date Range":
     min_date = df_scope.index.min().date()
     max_date = df_scope.index.max().date()
-    start_date, end_date = st.sidebar.date_input("Select Date Range:", [min_date, max_date], min_value=min_date, max_value=max_date)
     if isinstance(start_date, date) and isinstance(end_date, date):
         df_scope = df_scope[(df_scope.index.date >= start_date) & (df_scope.index.date <= end_date)]
 
