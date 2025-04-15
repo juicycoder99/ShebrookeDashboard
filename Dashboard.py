@@ -567,7 +567,7 @@ elif plot_env_option == "Select an option":
 # ---------------------- SIDEBAR ANOMALY DETECTOR TOGGLE ----------------------
 # Let user select anomaly detection method
 st.sidebar.markdown("### 🛡️ Anomaly Detection Settings")
-detector_choice = st.sidebar.radio("Detection Method:", ["IQR", "Z-Score"], horizontal=True)
+detector_choice = st.sidebar.radio("Detection Method:", ["IQR", "Z-Score", "Isolation Forest"], horizontal=True)
 
 # ---------------------- SIDEBAR DATA SCOPE CHOICE ----------------------
 # Let user choose data range to analyze
@@ -605,6 +605,17 @@ elif detector_choice == "Z-Score":
     z_scores = (df_scope['Gas'] - df_scope['Gas'].mean()) / df_scope['Gas'].std()
     df_scope['Anomaly'] = z_scores.abs() > z_thresh
 
+# ---------------------- ISOLATION FOREST (ML) ----------------------
+elif detector_choice == "Isolation Forest":
+    from sklearn.ensemble import IsolationForest
+    from sklearn.preprocessing import StandardScaler
+
+    scaler = StandardScaler()
+    gas_scaled = scaler.fit_transform(df_scope[['Gas']])
+    iso_forest = IsolationForest(contamination=0.05, random_state=42)
+    preds = iso_forest.fit_predict(gas_scaled)
+    df_scope['Anomaly'] = preds == -1
+
 # ---------------------- PLOT USING ALTAIR ----------------------
 df_plot = df_scope.reset_index()
 
@@ -637,7 +648,7 @@ if num_anomalies > 0:
     st.warning(f"🚨 {num_anomalies} anomalies detected in selected data scope.")
 
     # ---------------------- ANOMALY STATS ----------------------
-    st.subheader("Anomaly Summary")
+    st.subheader("📊 Anomaly Summary")
     st.markdown(f"- **First anomaly:** {df_scope[df_scope['Anomaly']].index.min()}\n"
                 f"- **Last anomaly:** {df_scope[df_scope['Anomaly']].index.max()}\n"
                 f"- **Min Gas Level (anomalies):** {df_scope[df_scope['Anomaly']]['Gas'].min()}\n"
@@ -655,12 +666,13 @@ if num_anomalies > 0:
     ).properties(
         width=600,
         height=300,
-        title="Anomaly Count per Day"
+        title="🗓️ Anomaly Count per Day"
     )
 
     st.altair_chart(bar, use_container_width=True)
 else:
     st.success("✅ No anomalies detected in the selected data.")
+
 
 
 
