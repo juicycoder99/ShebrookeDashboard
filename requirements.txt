@@ -46,6 +46,7 @@ tzdata==2025.1
 urllib3==2.3.0
 watchdog==6.0.0
 gdown==4.7.1
+scikit-learn
 kaggle
 
 
