@@ -625,23 +625,32 @@ elif detector_choice == "XGBoost":
     if 'Humidity_Moisture_Ratio' not in df_scope.columns:
         df_scope['Humidity_Moisture_Ratio'] = df_scope['Humidity'] / (df_scope['Moisture'] + 1e-6)
 
-    # Step 2: Define exact training features (and order)
+   # Ensure the exact training features
     features = [
         'Latitude', 'Longitude', 'Temperature',
         'Humidity', 'Moisture', 'Gas',
         'Temp_Gas', 'Humidity_Moisture_Ratio'
     ]
-
-    # Step 3: Prepare only those columns in that order
+    
+    # Make sure engineered features are present
+    if 'Temp_Gas' not in df_scope.columns:
+        df_scope['Temp_Gas'] = df_scope['Temperature'] * df_scope['Gas']
+    if 'Humidity_Moisture_Ratio' not in df_scope.columns:
+        df_scope['Humidity_Moisture_Ratio'] = df_scope['Humidity'] / (df_scope['Moisture'] + 1e-6)
+    
+    # Ensure only the correct columns in correct order
     df_features = df_scope[features].copy()
-
-    # Step 4: Predict
-    dmatrix = DMatrix(df_features, feature_names=features)
+    
+    # Explicitly define feature names when creating the DMatrix
+    dmatrix = DMatrix(df_features.values, feature_names=features)
+    
+    # Predict
     probs = model.predict(dmatrix)
-
-    # Step 5: Store predictions
+    
+    # Store results
     df_scope['Anomaly_Score'] = probs
     df_scope['Anomaly'] = (probs >= threshold).astype(int)
+
 
 
 # ---------------------- PLOT USING ALTAIR ----------------------
