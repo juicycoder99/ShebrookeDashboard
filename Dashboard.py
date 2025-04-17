@@ -610,7 +610,6 @@ elif detector_choice == "XGBoost":
     import joblib
     from xgboost import DMatrix
 
-    # Load model and threshold only once
     @st.cache_resource
     def load_xgb_model():
         model = joblib.load("xgb_anomaly_model.joblib")
@@ -619,37 +618,27 @@ elif detector_choice == "XGBoost":
 
     model, threshold = load_xgb_model()
 
-    # Step 1: Create engineered features if not already present
-    if 'Temp_Gas' not in df_scope.columns:
-        df_scope['Temp_Gas'] = df_scope['Temperature'] * df_scope['Gas']
-    if 'Humidity_Moisture_Ratio' not in df_scope.columns:
-        df_scope['Humidity_Moisture_Ratio'] = df_scope['Humidity'] / (df_scope['Moisture'] + 1e-6)
+    # Step 1: Create engineered features (just in case)
+    df_scope = df_scope.copy()  # ensure no SettingWithCopyWarning
+    df_scope['Temp_Gas'] = df_scope['Temperature'] * df_scope['Gas']
+    df_scope['Humidity_Moisture_Ratio'] = df_scope['Humidity'] / (df_scope['Moisture'] + 1e-6)
 
-   # Ensure the exact training features
+    # Step 2: Define exact features used during training
     features = [
         'Latitude', 'Longitude', 'Temperature',
         'Humidity', 'Moisture', 'Gas',
         'Temp_Gas', 'Humidity_Moisture_Ratio'
     ]
-    
-    # Make sure engineered features are present
-    if 'Temp_Gas' not in df_scope.columns:
-        df_scope['Temp_Gas'] = df_scope['Temperature'] * df_scope['Gas']
-    if 'Humidity_Moisture_Ratio' not in df_scope.columns:
-        df_scope['Humidity_Moisture_Ratio'] = df_scope['Humidity'] / (df_scope['Moisture'] + 1e-6)
-    
-    # Ensure only the correct columns in correct order
-    df_features = df_scope[features].copy()
-    
-    # Explicitly define feature names when creating the DMatrix
-    dmatrix = DMatrix(df_features.values, feature_names=features)
-    
-    # Predict
+
+    # Step 3: Prepare the DMatrix properly
+    df_features = df_scope[features].copy()  # ensure order and no extra cols
+    dmatrix = DMatrix(df_features, feature_names=features)
+
+    # Step 4: Predict
     probs = model.predict(dmatrix)
-    
-    # Store results
     df_scope['Anomaly_Score'] = probs
     df_scope['Anomaly'] = (probs >= threshold).astype(int)
+
 
 
 
