@@ -48,5 +48,8 @@ watchdog==6.0.0
 gdown==4.7.1
 scikit-learn
 kaggle
+altair
+joblib
+xgboost
 
 
