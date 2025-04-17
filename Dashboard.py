@@ -622,23 +622,10 @@ elif detector_choice == "XGBoost":
 
     model, threshold = load_xgb_model()
 
-    # Debugging info
-    with st.expander("Feature Debugging Info", expanded=False):
-        st.subheader("Model Feature Information")
-        st.write(f"Model expects {len(model.feature_names)} features:")
-        st.write(model.feature_names)
-
-        st.subheader("Current Data Features")
-        st.write("Original columns in df_scope:")
-        st.write(list(df_scope.columns))
-
-        # Feature engineering
-        df_scope = df_scope.copy()
-        df_scope['Temp_Gas'] = df_scope['Temperature'] * df_scope['Gas']
-        df_scope['Humidity_Moisture_Ratio'] = df_scope['Humidity'] / (df_scope['Moisture'] + 1e-6)
-
-        st.write("Columns after feature engineering:")
-        st.write(list(df_scope.columns))
+    # Feature engineering
+    df_scope = df_scope.copy()
+    df_scope['Temp_Gas'] = df_scope['Temperature'] * df_scope['Gas']
+    df_scope['Humidity_Moisture_Ratio'] = df_scope['Humidity'] / (df_scope['Moisture'] + 1e-6)
 
     # Use model feature list or fallback
     features = getattr(model, 'feature_names', [
@@ -647,19 +634,11 @@ elif detector_choice == "XGBoost":
         'Gas_Level', 'Temp_Gas', 'Humidity_Moisture_Ratio'
     ])
 
-    with st.expander("Final Feature Check", expanded=False):
-        st.write("Features being used for prediction:")
-        st.write(features)
-
-        missing_features = set(features) - set(df_scope.columns)
-        if missing_features:
-            st.error(f"Missing features: {missing_features}")
-            st.stop()
-        else:
-            st.success("All required features are present")
-
-        if hasattr(model, 'feature_names') and list(model.feature_names) != features:
-            st.warning("Feature order doesn't match model's expectations")
+    # Validate features
+    missing_features = set(features) - set(df_scope.columns)
+    if missing_features:
+        st.error(f"Missing features: {missing_features}")
+        st.stop()
 
     # Run prediction
     try:
