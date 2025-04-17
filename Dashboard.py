@@ -567,7 +567,7 @@ elif plot_env_option == "Select an option":
 # ---------------------- SIDEBAR ANOMALY DETECTOR TOGGLE ----------------------
 # Let user select anomaly detection method
 st.sidebar.markdown("### 🛡️ Anomaly Detection Settings")
-detector_choice = st.sidebar.radio("Detection Method:", ["IQR", "Z-Score", "Isolation Forest"], horizontal=True)
+detector_choice = st.sidebar.radio("Detection Method:", ["IQR", "Z-Score", "XGBoost"], horizontal=True)
 
 # ---------------------- SIDEBAR DATA SCOPE CHOICE ----------------------
 # Let user choose data range to analyze
@@ -605,16 +605,32 @@ elif detector_choice == "Z-Score":
     z_scores = (df_scope['Gas'] - df_scope['Gas'].mean()) / df_scope['Gas'].std()
     df_scope['Anomaly'] = z_scores.abs() > z_thresh
 
-# ---------------------- ISOLATION FOREST (ML) ----------------------
-elif detector_choice == "Isolation Forest":
-    from sklearn.ensemble import IsolationForest
-    from sklearn.preprocessing import StandardScaler
+# ---------------------- XGBOOST DETECTION ----------------------
+elif detector_choice == "XGBoost":
+    import joblib
+    from xgboost import DMatrix
 
-    scaler = StandardScaler()
-    gas_scaled = scaler.fit_transform(df_scope[['Gas']])
-    iso_forest = IsolationForest(contamination=0.05, random_state=42)
-    preds = iso_forest.fit_predict(gas_scaled)
-    df_scope['Anomaly'] = preds == -1
+    # Load model and threshold only once
+    @st.cache_resource
+    def load_xgb_model():
+        model = joblib.load("xgb_anomaly_model.joblib")
+        threshold = joblib.load("xgb_best_threshold.joblib")
+        return model, threshold
+
+    model, threshold = load_xgb_model()
+
+    # Prepare features (exclude non-numeric or irrelevant columns)
+    features = ['Latitude', 'Longitude', 'Temperature', 'Humidity', 'Moisture', 'Gas']
+    if 'Temp_Gas' not in df_scope.columns:
+        df_scope['Temp_Gas'] = df_scope['Temperature'] * df_scope['Gas']
+        df_scope['Humidity_Moisture_Ratio'] = df_scope['Humidity'] / (df_scope['Moisture'] + 1e-6)
+        features.extend(['Temp_Gas', 'Humidity_Moisture_Ratio'])
+
+    dmatrix = DMatrix(df_scope[features])
+    probs = model.predict(dmatrix)
+    df_scope['Anomaly_Score'] = probs
+    df_scope['Anomaly'] = (probs >= threshold).astype(int)
+
 
 # ---------------------- PLOT USING ALTAIR ----------------------
 df_plot = df_scope.reset_index()
@@ -641,22 +657,23 @@ anomaly_chart = alt.Chart(df_plot[df_plot['Anomaly']]).mark_point(
 
 st.altair_chart(base_chart + anomaly_chart, use_container_width=True)
 
-# ---------------------- ALERT BLOCK ----------------------
-num_anomalies = df_scope['Anomaly'].sum()
 
-if num_anomalies > 0:
-    st.warning(f"🚨 {num_anomalies} anomalies detected in selected data scope.")
+# ---------------------- ANOMALY STATS ----------------------
+st.subheader("Anomaly Summary")
 
-    # ---------------------- ANOMALY STATS ----------------------
-    st.subheader("📊 Anomaly Summary")
-    st.markdown(f"- **First anomaly:** {df_scope[df_scope['Anomaly']].index.min()}\n"
-                f"- **Last anomaly:** {df_scope[df_scope['Anomaly']].index.max()}\n"
-                f"- **Min Gas Level (anomalies):** {df_scope[df_scope['Anomaly']]['Gas'].min()}\n"
-                f"- **Max Gas Level (anomalies):** {df_scope[df_scope['Anomaly']]['Gas'].max()}\n"
-                f"- **Mean Gas Level (anomalies):** {df_scope[df_scope['Anomaly']]['Gas'].mean():.2f}")
+anomalies = df_scope[df_scope['Anomaly'] == 1]
 
-    # Daily anomaly count histogram
-    anomaly_per_day = df_scope[df_scope['Anomaly']].copy()
+if not anomalies.empty:
+    st.markdown(f"""
+    - First anomaly: {anomalies.index.min()}
+    - Last anomaly: {anomalies.index.max()}
+    - Min Gas Level (anomalies): {anomalies['Gas'].min()}
+    - Max Gas Level (anomalies): {anomalies['Gas'].max()}
+    - Mean Gas Level (anomalies): {anomalies['Gas'].mean():.2f}
+    """)
+
+    # Daily anomaly count plot
+    anomaly_per_day = anomalies.copy()
     anomaly_per_day['Date'] = anomaly_per_day.index.date
     count_per_day = anomaly_per_day.groupby('Date').size().reset_index(name='Count')
 
@@ -666,15 +683,12 @@ if num_anomalies > 0:
     ).properties(
         width=600,
         height=300,
-        title="🗓️ Anomaly Count per Day"
+        title="Anomaly Count per Day"
     )
 
     st.altair_chart(bar, use_container_width=True)
+
 else:
-    st.success("✅ No anomalies detected in the selected data.")
-
-
-
-
+    st.success("No anomalies detected in the selected data.")
 
 
