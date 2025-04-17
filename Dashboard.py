@@ -619,15 +619,27 @@ elif detector_choice == "XGBoost":
 
     model, threshold = load_xgb_model()
 
-    # Prepare features (exclude non-numeric or irrelevant columns)
-    features = ['Latitude', 'Longitude', 'Temperature', 'Humidity', 'Moisture', 'Gas']
+    # Step 1: Create engineered features if not already present
     if 'Temp_Gas' not in df_scope.columns:
         df_scope['Temp_Gas'] = df_scope['Temperature'] * df_scope['Gas']
+    if 'Humidity_Moisture_Ratio' not in df_scope.columns:
         df_scope['Humidity_Moisture_Ratio'] = df_scope['Humidity'] / (df_scope['Moisture'] + 1e-6)
-        features.extend(['Temp_Gas', 'Humidity_Moisture_Ratio'])
 
-    dmatrix = DMatrix(df_scope[features])
+    # Step 2: Define exact training features (and order)
+    features = [
+        'Latitude', 'Longitude', 'Temperature',
+        'Humidity', 'Moisture', 'Gas',
+        'Temp_Gas', 'Humidity_Moisture_Ratio'
+    ]
+
+    # Step 3: Prepare only those columns in that order
+    df_features = df_scope[features].copy()
+
+    # Step 4: Predict
+    dmatrix = DMatrix(df_features, feature_names=features)
     probs = model.predict(dmatrix)
+
+    # Step 5: Store predictions
     df_scope['Anomaly_Score'] = probs
     df_scope['Anomaly'] = (probs >= threshold).astype(int)
 
