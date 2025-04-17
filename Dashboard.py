@@ -618,56 +618,58 @@ elif detector_choice == "XGBoost":
 
     model, threshold = load_xgb_model()
 
-    # Create diagnostic expander section
-    with st.expander("🔍 Feature Debugging Info", expanded=False):
+    # Debugging info
+    with st.expander("Feature Debugging Info", expanded=False):
         st.subheader("Model Feature Information")
         st.write(f"Model expects {len(model.feature_names)} features:")
         st.write(model.feature_names)
-        
+
         st.subheader("Current Data Features")
         st.write("Original columns in df_scope:")
         st.write(list(df_scope.columns))
-        
-        # Create engineered features
+
+        # Feature engineering
         df_scope = df_scope.copy()
         df_scope['Temp_Gas'] = df_scope['Temperature'] * df_scope['Gas']
         df_scope['Humidity_Moisture_Ratio'] = df_scope['Humidity'] / (df_scope['Moisture'] + 1e-6)
-        
+
         st.write("Columns after feature engineering:")
         st.write(list(df_scope.columns))
 
-    # Define features (use model's expected features if available)
+    # Feature list from model or fallback
     features = getattr(model, 'feature_names', [
         'Latitude', 'Longitude', 'Temperature',
         'Humidity', 'Moisture', 'Gas',
-        'Temp_Gas', 'Humidity_Moisture_Ratio'
+        'Gas_Level', 'Temp_Gas', 'Humidity_Moisture_Ratio'
     ])
-    
-    with st.expander("🔍 Final Feature Check", expanded=False):
+
+    # Validate features
+    with st.expander("Final Feature Check", expanded=False):
         st.write("Features being used for prediction:")
         st.write(features)
-        
-        # Check for missing features
+
         missing_features = set(features) - set(df_scope.columns)
         if missing_features:
             st.error(f"Missing features: {missing_features}")
+            st.stop()
         else:
             st.success("All required features are present")
-            
-        # Check feature order
+
         if hasattr(model, 'feature_names') and list(model.feature_names) != features:
             st.warning("Feature order doesn't match model's expectations")
 
-    # Prepare the DMatrix
+    # Make prediction
     try:
         df_features = df_scope[features].copy()
         dmatrix = DMatrix(df_features, feature_names=features)
-        
-        # Predict
+
         probs = model.predict(dmatrix)
         df_scope['Anomaly_Score'] = probs
         df_scope['Anomaly'] = (probs >= threshold).astype(int)
-        
+
+        # ✅ Ensure df_plot exists and includes 'Anomaly'
+        df_plot = df_scope.copy()
+
     except Exception as e:
         st.error(f"Prediction failed: {str(e)}")
         st.stop()
