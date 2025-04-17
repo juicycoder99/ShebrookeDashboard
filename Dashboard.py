@@ -60,6 +60,10 @@ def download_and_preprocess():
             if 'Gas_Level' in d.columns:
                 d['Gas_Level'] = d['Gas_Level'].astype('category').cat.codes
 
+            # Preserve the 'Anomaly' column if it exists (in anomalies dataset)
+            if 'Anomaly' not in d.columns:
+                d['Anomaly'] = 0  # Default to 0 (normal) for the clean dataset
+
             d.dropna(inplace=True)  # ✅ Drop nulls safely inside loop
 
         return df, data2
@@ -618,61 +622,26 @@ elif detector_choice == "XGBoost":
 
     model, threshold = load_xgb_model()
 
-    # Debugging info
-    with st.expander("Feature Debugging Info", expanded=False):
-        st.subheader("Model Feature Information")
-        st.write(f"Model expects {len(model.feature_names)} features:")
-        st.write(model.feature_names)
+    # Step 1: Create engineered features (just in case)
+    df_scope = df_scope.copy()  # ensure no SettingWithCopyWarning
+    df_scope['Temp_Gas'] = df_scope['Temperature'] * df_scope['Gas']
+    df_scope['Humidity_Moisture_Ratio'] = df_scope['Humidity'] / (df_scope['Moisture'] + 1e-6)
 
-        st.subheader("Current Data Features")
-        st.write("Original columns in df_scope:")
-        st.write(list(df_scope.columns))
-
-        # Feature engineering
-        df_scope = df_scope.copy()
-        df_scope['Temp_Gas'] = df_scope['Temperature'] * df_scope['Gas']
-        df_scope['Humidity_Moisture_Ratio'] = df_scope['Humidity'] / (df_scope['Moisture'] + 1e-6)
-
-        st.write("Columns after feature engineering:")
-        st.write(list(df_scope.columns))
-
-    # Feature list from model or fallback
-    features = getattr(model, 'feature_names', [
+    # Step 2: Define exact features used during training
+    features = [
         'Latitude', 'Longitude', 'Temperature',
         'Humidity', 'Moisture', 'Gas',
-        'Gas_Level', 'Temp_Gas', 'Humidity_Moisture_Ratio'
-    ])
+        'Temp_Gas', 'Humidity_Moisture_Ratio'
+    ]
 
-    # Validate features
-    with st.expander("Final Feature Check", expanded=False):
-        st.write("Features being used for prediction:")
-        st.write(features)
+    # Step 3: Prepare the DMatrix properly
+    df_features = df_scope[features].copy()  # ensure order and no extra cols
+    dmatrix = DMatrix(df_features, feature_names=features)
 
-        missing_features = set(features) - set(df_scope.columns)
-        if missing_features:
-            st.error(f"Missing features: {missing_features}")
-            st.stop()
-        else:
-            st.success("All required features are present")
-
-        if hasattr(model, 'feature_names') and list(model.feature_names) != features:
-            st.warning("Feature order doesn't match model's expectations")
-
-    # Make prediction
-    try:
-        df_features = df_scope[features].copy()
-        dmatrix = DMatrix(df_features, feature_names=features)
-
-        probs = model.predict(dmatrix)
-        df_scope['Anomaly_Score'] = probs
-        df_scope['Anomaly'] = (probs >= threshold).astype(int)
-
-        # ✅ Ensure df_plot exists and includes 'Anomaly'
-        df_plot = df_scope.copy()
-
-    except Exception as e:
-        st.error(f"Prediction failed: {str(e)}")
-        st.stop()
+    # Step 4: Predict
+    probs = model.predict(dmatrix)
+    df_scope['Anomaly_Score'] = probs
+    df_scope['Anomaly'] = (probs >= threshold).astype(int)
 
 
 
@@ -700,6 +669,77 @@ anomaly_chart = alt.Chart(df_plot[df_plot['Anomaly']]).mark_point(
 )
 
 st.altair_chart(base_chart + anomaly_chart, use_container_width=True)
+
+######################################################################
+# After your XGBoost prediction code where you set df_scope['Anomaly']
+
+# Determine which DataFrame to use for visualization
+if dataset_choice == "Normal Readings":
+    # Use the processed data with XGBoost predictions
+    df_plot = df_scope.copy()
+else:  # "Readings with Anomalies"
+    # Use the pre-labeled anomalies dataset (data2)
+    df_plot = data2.copy()
+    
+    # If you want to also show XGBoost predictions alongside the true labels:
+    if 'Anomaly_Score' not in df_plot.columns:
+        # Calculate XGBoost scores for the anomalies dataset too
+        df_plot['Temp_Gas'] = df_plot['Temperature'] * df_plot['Gas']
+        df_plot['Humidity_Moisture_Ratio'] = df_plot['Humidity'] / (df_plot['Moisture'] + 1e-6)
+        df_features = df_plot[features].copy()
+        dmatrix = DMatrix(df_features, feature_names=features)
+        df_plot['Anomaly_Score'] = model.predict(dmatrix)
+        df_plot['Anomaly_Predicted'] = (df_plot['Anomaly_Score'] >= threshold).astype(int)
+
+# Ensure the Anomaly column exists (fallback protection)
+if 'Anomaly' not in df_plot.columns:
+    df_plot['Anomaly'] = df_plot.get('Anomaly_Predicted', 0)
+
+# Now create your visualizations
+try:
+    # Example visualization - adapt with your actual chart code
+    st.subheader("Anomaly Detection Results")
+    
+    # Chart 1: Actual vs Predicted (if using anomalies dataset)
+    if dataset_choice == "Readings with Anomalies":
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write("**True Anomalies**")
+            true_chart = alt.Chart(df_plot[df_plot['Anomaly'] == 1]).mark_point(
+                color='red', size=60, opacity=0.7
+            ).encode(
+                x='Datetime:T',
+                y='Temperature:Q',
+                tooltip=['Datetime', 'Temperature', 'Humidity']
+            )
+            st.altair_chart(true_chart, use_container_width=True)
+        
+        with col2:
+            st.write("**Predicted Anomalies**")
+            pred_chart = alt.Chart(df_plot[df_plot['Anomaly_Predicted'] == 1]).mark_point(
+                color='orange', size=60, opacity=0.7
+            ).encode(
+                x='Datetime:T',
+                y='Temperature:Q',
+                tooltip=['Datetime', 'Temperature', 'Humidity', 'Anomaly_Score']
+            )
+            st.altair_chart(pred_chart, use_container_width=True)
+    
+    # Chart 2: For normal dataset or combined view
+    st.write("**Anomaly Scores Over Time**")
+    score_chart = alt.Chart(df_plot).mark_line().encode(
+        x='Datetime:T',
+        y='Anomaly_Score:Q',
+        color=alt.condition(
+            alt.datum.Anomaly == 1,
+            alt.value('red'),
+            alt.value('steelblue')
+    )
+    st.altair_chart(score_chart, use_container_width=True)
+
+except Exception as e:
+    st.error(f"Visualization error: {str(e)}")
+    st.write("Debug info - DataFrame columns:", list(df_plot.columns))
 
 
 # ---------------------- ANOMALY STATS ----------------------
