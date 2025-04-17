@@ -742,37 +742,5 @@ except Exception as e:
     st.write("Debug info - DataFrame columns:", list(df_plot.columns))
 
 
-# ---------------------- ANOMALY STATS ----------------------
-st.subheader("Anomaly Summary")
-
-anomalies = df_scope[df_scope['Anomaly'] == 1]
-
-if not anomalies.empty:
-    st.markdown(f"""
-    - First anomaly: {anomalies.index.min()}
-    - Last anomaly: {anomalies.index.max()}
-    - Min Gas Level (anomalies): {anomalies['Gas'].min()}
-    - Max Gas Level (anomalies): {anomalies['Gas'].max()}
-    - Mean Gas Level (anomalies): {anomalies['Gas'].mean():.2f}
-    """)
-
-    # Daily anomaly count plot
-    anomaly_per_day = anomalies.copy()
-    anomaly_per_day['Date'] = anomaly_per_day.index.date
-    count_per_day = anomaly_per_day.groupby('Date').size().reset_index(name='Count')
-
-    bar = alt.Chart(count_per_day).mark_bar().encode(
-        x=alt.X('Date:T', title='Date'),
-        y=alt.Y('Count:Q', title='Anomalies Detected')
-    ).properties(
-        width=600,
-        height=300,
-        title="Anomaly Count per Day"
-    )
-
-    st.altair_chart(bar, use_container_width=True)
-
-else:
-    st.success("No anomalies detected in the selected data.")
 
 
