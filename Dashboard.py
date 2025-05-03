@@ -198,13 +198,17 @@ with st.sidebar.expander("📥 Download Reports", expanded=False):
 
 # ----------------------- Real-Time Sensor Overview Section -----------------------
 
+
 st.markdown("## 🌡️ Real-Time Sensor Overview")
+
+# ⏰ Canada/Eastern timezone
+local_tz = pytz.timezone("Canada/Eastern")
 
 # ✅ Initialize random sensor sample row (only if not already done)
 if 'random_row' not in st.session_state or data.empty:
     if not data.empty:
         st.session_state.random_row = data.sample(1).iloc[0]
-        st.session_state.last_update = datetime.now()
+        st.session_state.last_update = datetime.now(local_tz)
     else:
         st.warning("⚠️ Dataset is empty. Cannot display sensor snapshot.")
         st.stop()
@@ -213,14 +217,21 @@ if 'random_row' not in st.session_state or data.empty:
 if st.button("🔁 Refresh Sensor Data"):
     if not data.empty:
         st.session_state.random_row = data.sample(1).iloc[0]
-        st.session_state.last_update = datetime.now()
+        st.session_state.last_update = datetime.now(local_tz)
     else:
         st.warning("⚠️ No data available to refresh.")
         st.stop()
 
-# 🕒 Show last updated timestamp
+# 🕒 Show timestamps
 if 'last_update' in st.session_state:
-    st.caption(f"🕒 Last updated: {st.session_state.last_update.strftime('%Y-%m-%d %I:%M:%S %p')}")
+    # Get actual datetime index of the sampled row
+    sensor_timestamp = st.session_state.random_row.name
+    if isinstance(sensor_timestamp, pd.Timestamp):
+        sensor_timestamp = sensor_timestamp.tz_localize(None)  # remove tz if exists
+
+    st.caption(f"📍 Sensor Timestamp: {sensor_timestamp.strftime('%Y-%m-%d %I:%M:%S %p')}")
+    st.caption(f"🕒 Last Updated: {st.session_state.last_update.strftime('%Y-%m-%d %I:%M:%S %p')}")
+
 
 
 
