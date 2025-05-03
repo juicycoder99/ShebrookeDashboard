@@ -2,13 +2,12 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import os
-from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
 import altair as alt
-from datetime import datetime, timedelta
 from datetime import datetime, timedelta, date
 import kaggle
+
 
 
 
@@ -34,20 +33,16 @@ os.environ['KAGGLE_KEY'] = st.secrets["KAGGLE_KEY"]
 # ---------------------------------------------
 @st.cache_data
 def download_and_preprocess():
-
     try:
-        # ✅ Download dataset from Kaggle
         kaggle.api.dataset_download_files(
             'jibrilhussaini/synthetic-sherbrooke-sensor-readings',
             path='data',
             unzip=True
         )
 
-        # ✅ Load both datasets
         df = pd.read_csv('data/sherbrooke_fixed_sensor_readings.csv', on_bad_lines='skip')
         data2 = pd.read_csv('data/sherbrooke_sensor_readings_with_anomalies.csv', on_bad_lines='skip')
 
-        # ✅ Combine Date + Time into Datetime and preprocess both
         for d in [df, data2]:
             if 'Date' in d.columns and 'Time' in d.columns:
                 d['Datetime'] = pd.to_datetime(d['Date'] + ' ' + d['Time'], errors='coerce')
@@ -56,21 +51,22 @@ def download_and_preprocess():
                 st.warning("⚠️ Datetime column missing!")
 
             d.set_index('Datetime', inplace=True)
+            d.sort_index(inplace=True)
 
             if 'Gas_Level' in d.columns:
                 d['Gas_Level'] = d['Gas_Level'].astype('category').cat.codes
 
-            # Preserve the 'Anomaly' column if it exists (in anomalies dataset)
             if 'Anomaly' not in d.columns:
-                d['Anomaly'] = 0  # Default to 0 (normal) for the clean dataset
+                d['Anomaly'] = 0
 
-            d.dropna(inplace=True)  # ✅ Drop nulls safely inside loop
+            d.dropna(inplace=True)
 
         return df, data2
 
     except Exception as e:
         st.error(f"❌ Error loading datasets: {e}")
         return pd.DataFrame(), pd.DataFrame()
+
 
 
 # ---------------------------------------------
