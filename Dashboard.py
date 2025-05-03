@@ -474,7 +474,7 @@ plot_env_option = st.selectbox("📊 Select Environmental View Type:",
 
 if plot_env_option == "Monthly Trends of All Variables":
     # Step 1: Group and reset index
-    monthly_avg = data.groupby(data.index.month)[["Temperature", "Humidity", "Moisture", "Gas"]].mean()
+    monthly_avg = data[["Temperature", "Humidity", "Moisture", "Gas"]].copy().groupby(data.index.month).mean()
     monthly_avg.index.name = "MonthNum"
     monthly_avg = monthly_avg.reset_index()
     monthly_avg["Month"] = monthly_avg["MonthNum"].apply(lambda x: datetime(2023, x, 1).strftime("%b"))
