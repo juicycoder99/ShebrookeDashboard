@@ -572,7 +572,7 @@ elif plot_env_option == "Full Correlation Matrix (All Vars)":
     # Plot heatmap
     fig, ax = plt.subplots(figsize=(10, 8))
     sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', linewidths=0.5, ax=ax)
-    ax.set_title('🔗 Full Correlation Matrix with Time-based Features (Anomaly Excluded)')
+    ax.set_title('Full Correlation Matrix with Time-based Features')
     st.pyplot(fig)
 
 # ➤ Default message
