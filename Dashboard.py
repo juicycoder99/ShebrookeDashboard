@@ -7,6 +7,7 @@ import seaborn as sns
 import altair as alt
 from datetime import datetime, timedelta, date
 import kaggle
+import pytz
 
 
 
@@ -82,8 +83,12 @@ df, data2 = download_and_preprocess()
 # 📊 Sidebar Info & Dataset Selector
 # ---------------------------------------------
 
-# 🕒 Show current time
-st.sidebar.markdown(f" **Current Time:** {datetime.now().strftime('%I:%M:%S %p')}")
+# ⏰ Get local time in Canada/Eastern timezone
+local_tz = pytz.timezone("Canada/Eastern")
+local_time = datetime.now(local_tz)
+
+# 🕒 Show accurate local time
+st.sidebar.markdown(f" **Current Time:** {local_time.strftime('%I:%M:%S %p')}")
 
 # Add space between clock and dataset selector
 st.sidebar.markdown(" ")
