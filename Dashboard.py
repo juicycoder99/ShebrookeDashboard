@@ -594,7 +594,7 @@ detector_choice = st.sidebar.radio("Detection Method:", ["IQR", "Z-Score", "XGBo
 scope_choice = st.sidebar.radio(
     "Data Scope:", 
     ["Last 24 Hours", "Entire Dataset", "Custom Date Range"],
-    index=0,  # 👈 This makes "Last 24 Hours" the default
+    index=0,  #This makes "Last 24 Hours" the default
     horizontal=True
 )
 
@@ -603,7 +603,11 @@ scope_choice = st.sidebar.radio(
 
 df_scope = df.sort_index().copy()
 
-if scope_choice == "Entire Dataset":
+if scope_choice == "Last 24 Hours":
+    latest_time = df_scope.index.max()
+    df_scope = df_scope[df_scope.index >= (latest_time - timedelta(hours=24))]
+
+elif scope_choice == "Entire Dataset":
     pass  # No filtering needed
 
 elif scope_choice == "Custom Date Range":
@@ -618,6 +622,7 @@ elif scope_choice == "Custom Date Range":
         df_scope = df_scope[(df_scope.index.date >= start_date) & (df_scope.index.date <= end_date)]
     else:
         st.warning("⚠️ Invalid date range selected.")
+
 
 
 # Initialize anomaly column
