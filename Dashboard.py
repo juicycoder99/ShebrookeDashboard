@@ -222,14 +222,8 @@ if st.button("🔁 Refresh Sensor Data"):
         st.warning("⚠️ No data available to refresh.")
         st.stop()
 
-# 🕒 Show timestamps
+# 🕒 Show last updated timestamp only
 if 'last_update' in st.session_state:
-    # Get actual datetime index of the sampled row
-    sensor_timestamp = st.session_state.random_row.name
-    if isinstance(sensor_timestamp, pd.Timestamp):
-        sensor_timestamp = sensor_timestamp.tz_localize(None)  # remove tz if exists
-
-    st.caption(f"📍 Sensor Timestamp: {sensor_timestamp.strftime('%Y-%m-%d %I:%M:%S %p')}")
     st.caption(f"🕒 Last Updated: {st.session_state.last_update.strftime('%Y-%m-%d %I:%M:%S %p')}")
 
 
