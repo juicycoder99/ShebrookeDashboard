@@ -554,6 +554,7 @@ elif plot_env_option == "Correlation Matrix (Main Vars)":
 elif plot_env_option == "Full Correlation Matrix (All Vars)":
     df_corr = data.copy()
 
+    # Add time-based features
     if 'Hour' not in df_corr.columns:
         df_corr["Hour"] = df_corr.index.hour
     if 'DayOfWeek' not in df_corr.columns:
@@ -561,11 +562,17 @@ elif plot_env_option == "Full Correlation Matrix (All Vars)":
     if 'Month' not in df_corr.columns:
         df_corr["Month"] = df_corr.index.month
 
+    # Drop 'Anomaly' if it exists
+    if 'Anomaly' in df_corr.columns:
+        df_corr = df_corr.drop(columns=['Anomaly'])
+
+    # Compute correlation
     corr_matrix = df_corr.select_dtypes(include=['number']).corr()
 
+    # Plot heatmap
     fig, ax = plt.subplots(figsize=(10, 8))
     sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', linewidths=0.5, ax=ax)
-    ax.set_title('🔗 Full Correlation Matrix with Time-based Features')
+    ax.set_title('🔗 Full Correlation Matrix with Time-based Features (Anomaly Excluded)')
     st.pyplot(fig)
 
 # ➤ Default message
