@@ -97,9 +97,6 @@ dataset_choice = st.sidebar.radio(label="", options=["Normal Readings", "Reading
 data = df if dataset_choice == "Normal Readings" else data2
 
 
-st.markdown(f"### 📁 Currently Viewing: **{dataset_choice}**")
-
-
 
 # ---------------------------------------
 # 🧾 Sidebar Expandable Dashboard Info
