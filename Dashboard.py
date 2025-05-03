@@ -581,7 +581,7 @@ elif plot_env_option == "Select an option":
 
 
 # ---------------------- ANOMALY DETECTION TOGGLE ----------------------
-st.sidebar.markdown("### 🎯 Anomaly Detection Control")
+st.sidebar.markdown("### Anomaly Detection Control")
 run_anomaly_detection = st.sidebar.checkbox("Enable Anomaly Detection", value=False)
 
 # ---------------------- SIDEBAR ANOMALY DETECTOR TOGGLE ----------------------
@@ -591,7 +591,12 @@ detector_choice = st.sidebar.radio("Detection Method:", ["IQR", "Z-Score", "XGBo
 
 # ---------------------- SIDEBAR DATA SCOPE CHOICE ----------------------
 # Let user choose data range to analyze
-scope_choice = st.sidebar.radio("Data Scope:", ["Entire Dataset", "Custom Date Range"], horizontal=True)
+scope_choice = st.sidebar.radio(
+    "Data Scope:", 
+    ["Last 24 Hours", "Entire Dataset", "Custom Date Range"],
+    index=0,  # 👈 This makes "Last 24 Hours" the default
+    horizontal=True
+)
 
 # ---------------------- PREPARE DATA BASED ON SELECTION ----------------------
 # Sort the data (just in case)
