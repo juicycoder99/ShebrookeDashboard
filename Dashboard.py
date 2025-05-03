@@ -580,6 +580,9 @@ elif plot_env_option == "Select an option":
     st.info("ℹ️ Please select an environmental insight view.")
 
 
+# ---------------------- ANOMALY DETECTION TOGGLE ----------------------
+st.sidebar.markdown("### 🎯 Anomaly Detection Control")
+run_anomaly_detection = st.sidebar.checkbox("Enable Anomaly Detection", value=False)
 
 # ---------------------- SIDEBAR ANOMALY DETECTOR TOGGLE ----------------------
 # Let user select anomaly detection method
@@ -588,23 +591,29 @@ detector_choice = st.sidebar.radio("Detection Method:", ["IQR", "Z-Score", "XGBo
 
 # ---------------------- SIDEBAR DATA SCOPE CHOICE ----------------------
 # Let user choose data range to analyze
-scope_choice = st.sidebar.radio("Data Scope:", ["Recent (1000 rows)", "Entire Dataset", "Custom Date Range"], horizontal=True)
+scope_choice = st.sidebar.radio("Data Scope:", ["Entire Dataset", "Custom Date Range"], horizontal=True)
 
 # ---------------------- PREPARE DATA BASED ON SELECTION ----------------------
 # Sort the data (just in case)
+
 df_scope = df.sort_index().copy()
 
-# Handle scope choice
-if scope_choice == "Recent (1000 rows)" and len(df_scope) > 1000:
-    df_scope = df_scope.tail(1000)
+if scope_choice == "Entire Dataset":
+    pass  # No filtering needed
+
 elif scope_choice == "Custom Date Range":
     min_date = df_scope.index.min().date()
     max_date = df_scope.index.max().date()
+
     st.sidebar.markdown("### 📅 Custom Date Range")
     start_date = st.sidebar.date_input("Start Date:", min_value=min_date, max_value=max_date, value=min_date)
     end_date = st.sidebar.date_input("End Date:", min_value=min_date, max_value=max_date, value=max_date)
+
     if isinstance(start_date, date) and isinstance(end_date, date):
         df_scope = df_scope[(df_scope.index.date >= start_date) & (df_scope.index.date <= end_date)]
+    else:
+        st.warning("⚠️ Invalid date range selected.")
+
 
 # Initialize anomaly column
 df_scope['Anomaly'] = False
