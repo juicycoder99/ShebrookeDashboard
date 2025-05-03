@@ -541,7 +541,7 @@ elif plot_env_option == "Correlation Matrix (Main Vars)":
 
     fig, ax = plt.subplots(figsize=(7, 5))
     sns.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f", square=True, ax=ax)
-    ax.set_title("🧩 Correlation Matrix of Main Variables")
+    ax.set_title("Correlation Matrix of Main Variables")
     st.pyplot(fig)
 
 # ➤ 4. Full Correlation Matrix with Time-based Features
