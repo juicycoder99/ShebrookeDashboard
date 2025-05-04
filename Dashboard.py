@@ -95,7 +95,12 @@ st.sidebar.markdown(" ")
 
 # 📁 Dataset selector
 st.sidebar.markdown("📂 **Select Dataset:**")
-dataset_choice = st.sidebar.radio(label="", options=["Normal Readings", "Readings with Anomalies"], label_visibility="collapsed")
+dataset_choice = st.sidebar.radio(
+    "Select a dataset", 
+    options=["Normal Readings", "Readings with Anomalies"], 
+    label_visibility="collapsed"
+)
+
 
 
 # Dynamically assign selected dataset to `data`
