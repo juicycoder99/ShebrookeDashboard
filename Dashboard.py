@@ -624,78 +624,75 @@ elif scope_choice == "Custom Date Range":
         st.warning("⚠️ Invalid date range selected.")
 
 
+# ---------------------- ANOMALY DETECTION LOGIC ----------------------
+if run_anomaly_detection:
 
-# Initialize anomaly column
-df_scope['Anomaly'] = False
+    # Initialize anomaly column
+    df_scope['Anomaly'] = False
+    
 
-# ---------------------- IQR DETECTION ----------------------
-if detector_choice == "IQR":
-    Q1 = df_scope['Gas'].quantile(0.25)
-    Q3 = df_scope['Gas'].quantile(0.75)
-    IQR = Q3 - Q1
-    df_scope['Anomaly'] = (df_scope['Gas'] < (Q1 - 1.5 * IQR)) | (df_scope['Gas'] > (Q3 + 1.5 * IQR))
+    # ---------------------- IQR DETECTION ----------------------
+    if detector_choice == "IQR":
+        Q1 = df_scope['Gas'].quantile(0.25)
+        Q3 = df_scope['Gas'].quantile(0.75)
+        IQR = Q3 - Q1
+        df_scope['Anomaly'] = (df_scope['Gas'] < (Q1 - 1.5 * IQR)) | (df_scope['Gas'] > (Q3 + 1.5 * IQR))
 
-# ---------------------- Z-SCORE DETECTION ----------------------
-elif detector_choice == "Z-Score":
-    z_thresh = 3
-    z_scores = (df_scope['Gas'] - df_scope['Gas'].mean()) / df_scope['Gas'].std()
-    df_scope['Anomaly'] = z_scores.abs() > z_thresh
+    # ---------------------- Z-SCORE DETECTION ----------------------
+    elif detector_choice == "Z-Score":
+        z_thresh = 3
+        z_scores = (df_scope['Gas'] - df_scope['Gas'].mean()) / df_scope['Gas'].std()
+        df_scope['Anomaly'] = z_scores.abs() > z_thresh
 
-# ---------------------- XGBOOST DETECTION ----------------------
-elif detector_choice == "XGBoost":
-    import joblib
-    from xgboost import DMatrix
+    # ---------------------- XGBOOST DETECTION ----------------------
+    elif detector_choice == "XGBoost":
+        import joblib
+        from xgboost import DMatrix
 
-    @st.cache_resource
-    def load_xgb_model():
-        model = joblib.load("xgb_anomaly_model.joblib")
-        threshold = joblib.load("xgb_best_threshold.joblib")
-        return model, threshold
+        @st.cache_resource
+        def load_xgb_model():
+            model = joblib.load("xgb_anomaly_model.joblib")
+            threshold = joblib.load("xgb_best_threshold.joblib")
+            return model, threshold
 
-    model, threshold = load_xgb_model()
+        model, threshold = load_xgb_model()
+        
+        # ✅ Feature Engineering
+        df_scope = df_scope.copy()
+        df_scope['Temp_Gas'] = df_scope['Temperature'] * df_scope['Gas']
+        df_scope['Humidity_Moisture_Ratio'] = df_scope['Humidity'] / (df_scope['Moisture'] + 1e-6)
 
-    # Feature engineering
-    df_scope = df_scope.copy()
-    df_scope['Temp_Gas'] = df_scope['Temperature'] * df_scope['Gas']
-    df_scope['Humidity_Moisture_Ratio'] = df_scope['Humidity'] / (df_scope['Moisture'] + 1e-6)
+        # ✅ Define expected features
+        features = getattr(model, 'feature_names', [
+            'Latitude', 'Longitude', 'Temperature',
+            'Humidity', 'Moisture', 'Gas',
+            'Gas_Level', 'Temp_Gas', 'Humidity_Moisture_Ratio'
+        ])
 
-    # Use model feature list or fallback
-    features = getattr(model, 'feature_names', [
-        'Latitude', 'Longitude', 'Temperature',
-        'Humidity', 'Moisture', 'Gas',
-        'Gas_Level', 'Temp_Gas', 'Humidity_Moisture_Ratio'
-    ])
+        # ✅ Validate that all required features are present
+        missing_features = set(features) - set(df_scope.columns)
+        if missing_features:
+            st.error(f"❌ Missing features required by model: {missing_features}")
+            st.stop()
 
-    # Validate features
-    missing_features = set(features) - set(df_scope.columns)
-    if missing_features:
-        st.error(f"Missing features: {missing_features}")
-        st.stop()
+        # ✅ Run XGBoost predictions
+        try:
+            df_features = df_scope[features].copy()
+            dmatrix = DMatrix(df_features, feature_names=features)
+            probs = model.predict(dmatrix)
 
-    # Run prediction
-    try:
-        df_features = df_scope[features].copy()
-        dmatrix = DMatrix(df_features, feature_names=features)
-        probs = model.predict(dmatrix)
-        df_scope['Anomaly_Score'] = probs
-        df_scope['Anomaly'] = (probs >= threshold).astype(int)
+            df_scope['Anomaly_Score'] = probs
+            df_scope['Anomaly'] = (probs >= threshold).astype(int)
 
-    except Exception as e:
-        st.error(f"Prediction failed: {str(e)}")
-        st.stop()
+        except Exception as e:
+            st.error(f"❌ Prediction failed: {str(e)}")
+            st.stop()
 
-    # Set up df_plot for chart rendering
-    if dataset_choice == "Normal Readings":
-        df_plot = df_scope.copy()
-    else:
-        df_plot = data2.copy()
+    # ✅ ---------------------- ALTAIR PLOT ----------------------
 
-        # Add 'Anomaly' column if it's missing
-        if 'Anomaly' not in df_plot.columns:
-            df_plot['Anomaly'] = 0
+    show_anomalies = st.checkbox("Show Anomaly Markers", value=True)
 
-    # ---------------------- ALTAIR PLOT ----------------------
-    df_plot = df_plot.reset_index()
+    df_plot = df_scope.reset_index()
 
     base_chart = alt.Chart(df_plot).mark_line().encode(
         x=alt.X('Datetime:T', title='Time'),
@@ -707,16 +704,16 @@ elif detector_choice == "XGBoost":
         title="Gas Levels with Anomaly Detection"
     )
 
-    anomaly_chart = alt.Chart(df_plot[df_plot['Anomaly'] == 1]).mark_point(
-        color='red',
-        size=80,
-        shape='triangle'
-    ).encode(
-        x='Datetime:T',
-        y='Gas:Q',
-        tooltip=['Datetime:T', 'Gas:Q']
-    )
-
-    st.altair_chart(base_chart + anomaly_chart, use_container_width=True)
-
-
+    if show_anomalies and 'Anomaly' in df_plot.columns:
+        anomaly_chart = alt.Chart(df_plot[df_plot['Anomaly'] == 1]).mark_point(
+            color='red',
+            size=80,
+            shape='triangle'
+        ).encode(
+            x='Datetime:T',
+            y='Gas:Q',
+            tooltip=['Datetime:T', 'Gas:Q']
+        )
+        st.altair_chart(base_chart + anomaly_chart, use_container_width=True)
+    else:
+        st.altair_chart(base_chart, use_container_width=True)
